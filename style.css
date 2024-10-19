@@ -1,0 +1,82 @@
+:root {
+    --color-white: #FFFFFF;         /* Primary Color */
+    --color-blue: #0047AB;          /* Primary Accent (Deep Blue) */
+    --color-orange: #e37500;        /* Secondary Accent (Scotturb Orange) */
+    --color-red: #C72A41;           /* Highlight Color (Vimeca Red) */
+    --color-dark-gray: #333333;     /* Main Text Color */
+    --color-gray: #666666;          /* Secondary Text Color */
+    --color-black: #000000;         /* Header Background Color */
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--color-white);
+    color: var(--color-dark-gray);
+    margin: 0;
+    padding: 20px;
+}
+
+header {
+    background-color: var(--color-black);
+    color: var(--color-white);
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+header h1, h2, h3 {
+    color: var(--color-white)
+}
+
+h1, h2, h3 {
+    color: var(--color-blue);
+}
+
+button.primary {
+    background-color: var(--color-blue);
+    color: var(--color-white);
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+}
+
+button.primary:hover {
+    background-color: var(--color-orange);
+}
+
+button.secondary {
+    background-color: var(--color-red);
+    color: var(--color-white);
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button.secondary:hover {
+    background-color: var(--color-blue);
+}
+
+.alert {
+    background-color: var(--color-red);
+    color: var(--color-white);
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+    margin-top: 20px;
+    text-align: center;
+    padding: 20px;
+    background-color: var(--color-orange);
+    color: var(--color-white);
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+section {
+    margin: 20px 0;
+}
