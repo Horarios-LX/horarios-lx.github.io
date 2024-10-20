@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoráriosLX</title>
+    <link rel="icon" href="/static/logo.svg" sizes="256x256">
+    <script src="/constants.js"></script>
+    <link href="/style.css" rel="stylesheet">
+    <meta property="og:title" content="HoráriosLX - Contactos" />
+    <meta property="og:description" content="Horários em tempo real dos autocarros da Zona 1 da AML." />
+    <meta property="og:image" content="https://horarios-lx.github.io/static/logo.png" />
+    <meta property="og:url" content="https://horarios-lx.github.io/contactos" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0047AB">
+    <meta property="og:locale" content="pt_PT" />
+</head>
+
+<body>
+    <header>
+        <img src="/static/logo1.svg"></img>
+        <h1><a href="/">HoráriosLX</a></h1>
+        <div class="buttons">
+            <a href="/contactos/">Contactos</a>
+            <span class="split">|</span>
+            <a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
+            <span class="split">|</span>
+            <a href="/sobre/">Sobre</a>
+        </div>
+    </header>
+    <div class="loading" id="loading">
+        <svg width="2.9082291mm" height="2.9082286mm" viewBox="0 0 2.9082291 2.9082286" version="1.1" id="svg1"
+            xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"
+            xmlns:svg="http://www.w3.org/2000/svg">
+            <defs id="defs1">
+                <linearGradient id="linearGradient22">
+                    <stop style="stop-color:#c72a41;stop-opacity:1;" offset="0" id="stop21" />
+                    <stop style="stop-color:#c72a41;stop-opacity:0;" offset="0.80461329" id="stop22" />
+                </linearGradient>
+                <linearGradient id="linearGradient17">
+                    <stop style="stop-color:#0047ab;stop-opacity:1;" offset="0" id="stop16" />
+                    <stop style="stop-color:#0047ab;stop-opacity:0;" offset="0.80461329" id="stop17" />
+                </linearGradient>
+                <linearGradient xlink:href="#linearGradient17" id="linearGradient16" gradientUnits="userSpaceOnUse"
+                    gradientTransform="matrix(0.99909124,0,0,0.99909124,-57.0557,-108.37622)" x1="6.2064195"
+                    y1="65.779793" x2="9.513711" y2="65.779793" />
+                <linearGradient xlink:href="#linearGradient22" id="linearGradient21" gradientUnits="userSpaceOnUse"
+                    gradientTransform="matrix(0.99909124,0,0,0.99909124,41.349852,-23.063785)" x1="6.2064195"
+                    y1="65.779793" x2="9.513711" y2="65.779793" />
+            </defs>
+            <g id="layer1" transform="translate(-3.1750012,-63.500006)">
+                <rect
+                    style="fill:none;fill-opacity:1;stroke:url(#linearGradient16);stroke-width:0.264583;stroke-dasharray:none"
+                    id="rect15" width="2.6434288" height="2.6434288" x="-50.52449" y="-43.977932" ry="1.3217144"
+                    transform="rotate(-135)" />
+                <rect
+                    style="fill:none;fill-opacity:1;stroke:url(#linearGradient21);stroke-width:0.264583;stroke-dasharray:none"
+                    id="rect21" width="2.6434288" height="2.6434288" x="47.881062" y="41.334503" ry="1.3217144"
+                    transform="rotate(45)" />
+                <path
+                    style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.198437;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+                    d="m 4.6291158,63.953661 v 1.000637 l 0.4051433,0.404963" id="path30" />
+            </g>
+        </svg>
+    </div>
+    <div class="h-spacer"></div>
+    <section class="departures">
+        <h2>Próximas Partidas</h2>
+        <div class="title-container">
+            <button id="sound"><img src="/static/speaker.svg"></img></button>
+            <p id="title"><b>PARAGEM</b></p>
+        </div>
+        <p id="lines"><span class="line">1000</span></p>
+        <div id="departures" class="departures-loading">
+            <svg width="2.9082291mm" height="2.9082286mm" viewBox="0 0 2.9082291 2.9082286" version="1.1" id="svg1"
+            xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"
+            xmlns:svg="http://www.w3.org/2000/svg">
+            <defs id="defs1">
+                <linearGradient id="linearGradient22">
+                    <stop style="stop-color:#c72a41;stop-opacity:1;" offset="0" id="stop21" />
+                    <stop style="stop-color:#c72a41;stop-opacity:0;" offset="0.80461329" id="stop22" />
+                </linearGradient>
+                <linearGradient id="linearGradient17">
+                    <stop style="stop-color:#0047ab;stop-opacity:1;" offset="0" id="stop16" />
+                    <stop style="stop-color:#0047ab;stop-opacity:0;" offset="0.80461329" id="stop17" />
+                </linearGradient>
+                <linearGradient xlink:href="#linearGradient17" id="linearGradient16" gradientUnits="userSpaceOnUse"
+                    gradientTransform="matrix(0.99909124,0,0,0.99909124,-57.0557,-108.37622)" x1="6.2064195"
+                    y1="65.779793" x2="9.513711" y2="65.779793" />
+                <linearGradient xlink:href="#linearGradient22" id="linearGradient21" gradientUnits="userSpaceOnUse"
+                    gradientTransform="matrix(0.99909124,0,0,0.99909124,41.349852,-23.063785)" x1="6.2064195"
+                    y1="65.779793" x2="9.513711" y2="65.779793" />
+            </defs>
+            <g id="layer1" transform="translate(-3.1750012,-63.500006)">
+                <rect
+                    style="fill:none;fill-opacity:1;stroke:url(#linearGradient16);stroke-width:0.264583;stroke-dasharray:none"
+                    id="rect15" width="2.6434288" height="2.6434288" x="-50.52449" y="-43.977932" ry="1.3217144"
+                    transform="rotate(-135)" />
+                <rect
+                    style="fill:none;fill-opacity:1;stroke:url(#linearGradient21);stroke-width:0.264583;stroke-dasharray:none"
+                    id="rect21" width="2.6434288" height="2.6434288" x="47.881062" y="41.334503" ry="1.3217144"
+                    transform="rotate(45)" />
+                <path
+                    style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.198437;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+                    d="m 4.6291158,63.953661 v 1.000637 l 0.4051433,0.404963" id="path30" />
+            </g>
+        </svg>
+        </div>
+    </section>
+    <footer>
+        <a href="/contactos/">Contactos</a>
+        <span class="split">|</span><a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
+        <span class="split">|</span><a href="/sobre/">Sobre</a>
+        <br>
+        <p>Criado por Movies22</p>
+    </footer>
+    <script src="/js/departures.js"></script>
+</body>
+
+</html>

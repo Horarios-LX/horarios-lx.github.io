@@ -1,36 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <script src="./constants.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horários LX</title>
+    <title>HoráriosLX</title>
     <link rel="icon" href="/static/logo.svg" sizes="256x256">
     <link href="/style.css" rel="stylesheet">
-
     <meta property="og:title" content="HoráriosLX" />
     <meta property="og:description" content="Horários em tempo real dos autocarros da Zona 1 da AML." />
     <meta property="og:image" content="https://horarios-lx.github.io/static/logo.png" />
     <meta property="og:url" content="https://horarios-lx.github.io/" />
     <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0047AB">
+    <meta property="og:locale" content="pt_PT" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 </head>
+
 <body>
     <header>
-        <h1>Color Palette Preview</h1>
+        <img src="/static/logo1.svg"></img>
+        <h1><a href="/">HoráriosLX</a></h1>
+        <div class="buttons">
+            <a href="/contactos/">Contactos</a>
+            <span class="split">|</span>
+            <a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
+            <span class="split">|</span>
+            <a href="/sobre/">Sobre</a>
+        </div>
     </header>
-
-    <section>
-        <h2>Sample Buttons</h2>
-        <button class="primary">Primary Button</button>
-        <button class="secondary">Secondary Button</button>
+    <div class="h-spacer"></div>
+    <section class="intro">
+        <section>
+            <h2>Estatísticas</h2>
+            <div class="statsBox">
+                <h3><span style="color: var(--accent-secondary);" id="stats-vehicles">0</span><br>veículos</h3>
+                <h3><span style="color: var(--accent-secondary);" id="stats-lines">0</span><br>linhas</h3>
+            </div>
+        </section>
+        <section class="div-split">
+            <h2>Pesquisar</h2>
+            <div class="searchContainer" style="position: relative;">
+               <input id="search" placeholder="Selecione uma paragem" autocomplete="off">
+               <div class="autocomplete hidden" id="autocomplete"></div>
+            </div>
+            <div class="buttonsRow">
+                <button id="schedules" class="disabled">Ver horários</button>
+            </div>
+        </section>
     </section>
-
-    <section>
-        <h2>Alert Message</h2>
-        <div class="alert">This is an alert message!</div>
+    <div class="h-spacer"></div>
+    <section class="map">
+        <h2>Paragens</h2>
+        <div class="map-container" id="map"></div>
     </section>
 
     <footer>
-        <p>Footer with Scotturb Orange</p>
+        <a href="/contactos/">Contactos</a>
+        <span class="split">|</span><a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
+        <span class="split">|</span><a href="/sobre/">Sobre</a>
+        <br>
+        <p>Criado por Movies22</p>
     </footer>
+    <script src="/js/index.js"></script>
+    <script src="/js/search.js"></script>
+    <script>
+        document.body.onload = () => {
+            fetch(CLOUDFLARED + "stats").then(r => r.json()).then(r => {
+                let vec = document.getElementById("stats-vehicles")
+                let lines = document.getElementById("stats-lines")
+                vec.textContent = r.vehicles;
+                lines.textContent = r.lines;
+                if(r.vehicles === 1) {
+                    vec.parentElement.innerHTML = vec.outerHTML + "<br>veículo"
+                }
+                vec.classList.remove("loading")
+                lines.classList.remove("loading")
+            })
+            let el = document.getElementById("stats-vehicles")
+            /*setTimeout(() => {
+                console.log(el.children)
+                oldValue = el.children[0];
+                el.setAttribute("data-new-value", "1234")
+
+                el.classList.add("new")
+
+                setTimeout(() => {
+                    el.classList.add("reset")
+                    el.children[0].textContent = "1234"
+                }, 500);
+                setTimeout(() => {
+                    el.classList.remove('new');
+                }, 550)
+            }, 1000)*/
+        }
+    </script>
 </body>
+
 </html>
