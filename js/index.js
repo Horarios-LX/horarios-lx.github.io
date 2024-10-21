@@ -85,3 +85,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
     map.addLayer(markers)
 })()
+
+
+getStops = () => stops;

@@ -12,6 +12,7 @@ el.addEventListener('input', function() {
 let caches = {}
 
 async function genAutocomplete() {
+    stops = getStops();
     preSearch()
     const query = el.value.toLowerCase();
     autocomplete.innerHTML = ''; // Clear previous suggestions
@@ -19,13 +20,7 @@ async function genAutocomplete() {
     if (query.length > 1) {
         autocoplete.classList.remove("hidden")
         let filteredSuggestions;
-        let key = Object.keys(caches).find(a => query.startsWith(a.toLowerCase()));
-        if(key) {
-            filteredSuggestions = caches[key].filter(a => a.name.toLowerCase().startsWith(query.toLowerCase()) || a.name.toLowerCase().includes(query.toLowerCase()) || a.id.startsWith(query))
-        } else {
-            filteredSuggestions = (await fetch(CLOUDFLARED + "stop/autocomplete?stop=" + query).then(r => r.json()))
-            caches[query.toLowerCase()] = filteredSuggestions;
-        }
+        filteredSuggestions = stops.filter(a => a.name.toLowerCase().startsWith(query.toLowerCase) || a.name.toLowerCase().includes(query.toLowerCase()) || a.id.startsWith(query))
         filteredSuggestions.sort((a, b) => {
             if(a.name.toLowerCase().startsWith(query.toLowerCase()) && b.name.toLowerCase().startsWith(query.toLowerCase())) return a.name.localeCompare(b.name);
             if(a.name.toLowerCase().startsWith(query.toLowerCase()) && !b.name.toLowerCase().startsWith(query.toLowerCase())) return -1;

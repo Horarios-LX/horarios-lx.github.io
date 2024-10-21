@@ -13,6 +13,7 @@
     --ontime: #3bb33b;
     --delayed: #b33b3b;
     --early: #b37b3b;
+    --injected: #c5a436;
     --scheduled: #7f7f7f;
 }
 
@@ -37,6 +38,29 @@ header {
     position: fixed;
     width: calc(100% - 2em);
     z-index: 1000;
+}
+
+.alerts {
+    width: 100%;
+    text-align: left;
+    margin: 0px;
+    font-size: .75em;
+    font-weight: bold;
+    border-radius: .5em;
+}
+
+.alerts p {
+    display: flex;
+    align-items: center;
+    background-color: #fff5b3;
+    padding: .5em;
+    text-align: left !important;
+    margin: 0;
+    margin-top: .5em !important;
+    border-radius: 1em;
+    color: black;
+    font-size: 1em;
+    height: 1.2em;
 }
 
 header h1 {
@@ -613,6 +637,12 @@ section {
     padding: .5em;
     margin-bottom: .5em;
     display: flex;
+    flex-direction: column;
+}
+
+.departures #departures .bus .info, .departures #departures .bus .details {
+    display: flex;
+    flex-direction: row;
 }
 
 .departures #departures .bus .title {
@@ -627,7 +657,17 @@ section {
     position: relative;
 }
 
-.departures #departures .bus .title.ontime {
+.departures #departures .bus.running .details .type {
+    margin-left: 0px;
+    margin-right: auto;
+}
+
+.departures #departures .bus.running .details .time {
+    margin-right: 0px;
+    margin-left: auto;
+}
+
+.departures #departures .bus .title.ontime, .departures #departures .bus .title.injected {
     padding-left: 1.5em;
     max-width: calc(80% - 2em);
     transform: translate(-.5em, 0);
@@ -652,6 +692,36 @@ section {
     width: .8em;
     height: .8em;
     background-color: var(--ontime);
+    opacity: 0.5;
+    position: absolute;
+    border-radius: .4em;
+    left: .8em;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    animation: blob 1s infinite;
+}
+
+.departures #departures .bus .title.injected::before {
+    content: '';
+    width: .5em;
+    height: .5em;
+    background-color: var(--injected);
+    opacity: 0.8;
+    position: absolute;
+    border-radius: .4em;
+    left: .8em;
+    top: 50%;
+    z-index: 4;
+    transform: translate(-50%, -50%);
+}
+
+
+.departures #departures .bus .title.injected::after {
+    content: '';
+    width: .8em;
+    height: .8em;
+    background-color: var(--injected);
     opacity: 0.5;
     position: absolute;
     border-radius: .4em;
@@ -698,8 +768,26 @@ section {
     justify-content: flex-end;
 }
 
+.departures #departures .bus .time {
+    font-weight: bold;
+}
+
+.departures #departures .bus .time .oldTime {
+    color: var(--gray);
+    text-decoration: line-through;
+    text-decoration-thickness: .125em;
+}
+
 .departures .schedule.ontime {
     color: var(--ontime);
+}
+
+.departures .schedule.early {
+    color: var(--early);
+}
+
+.departures .schedule.delayed {
+    color: var(--delayed);
 }
 
 .departures #departures .bus .title span {
