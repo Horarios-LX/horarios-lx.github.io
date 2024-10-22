@@ -401,7 +401,7 @@ h3 {
     display: flex;
 }
 
-.loading svg, .departures-loading svg {
+.loading object, .departures-loading object {
     width: auto;
     height: 20vh;
     position: relative;
@@ -636,6 +636,7 @@ section {
     border-radius: .75em;
     padding: .5em;
     margin-bottom: .5em;
+    cursor:pointer;
     display: flex;
     flex-direction: column;
 }
@@ -761,7 +762,6 @@ section {
     font-size: 1.2em;
     overflow: hidden;
     text-wrap: nowrap;
-    overflow: hidden;
     margin-right: 0px;
     margin-left: auto;
     text-overflow: ellipsis;
@@ -772,27 +772,65 @@ section {
     font-weight: bold;
 }
 
-.departures #departures .bus .time .oldTime {
+.departures #departures .bus .schedule .oldTime {
     color: var(--gray);
     text-decoration: line-through;
     text-decoration-thickness: .125em;
 }
 
-.departures .schedule.ontime {
+.departures .time.ontime {
     color: var(--ontime);
 }
 
-.departures .schedule.early {
+.departures .time.early {
     color: var(--early);
 }
 
-.departures .schedule.delayed {
+.departures .time.delayed {
     color: var(--delayed);
 }
 
 .departures #departures .bus .title span {
     font-size: .833em !important;
 }
+
+.schedule-expandable {
+    background-color: var(--white);
+    padding: .5em;
+    border-radius: .5em;
+    font-size: 1em;
+    max-height: 13em;
+}
+
+.schedule-expandable .route {
+    overflow-y: scroll;
+    max-height: 10em;
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-expandable .route .stop {
+    margin-left: 2em;
+    position: relative;
+    text-align: left;
+    width: calc(100% - 2em - 10px);
+    z-index: 1; 
+    display: flex;
+    align-items: center;
+    vertical-align: middle;
+    justify-content: flex-start;
+    box-sizing: border-box;
+}
+
+.schedule-expandable h2 {
+    font-size: 1em;
+    color: black;
+}
+
+.schedule-expandable.hidden {
+    display: none;
+}
+
 
 @media (max-width: 768px) {
     header .buttons {
