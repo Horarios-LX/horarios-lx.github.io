@@ -36,31 +36,33 @@
         </div>
     </header>
     <div class="h-spacer"></div>
-    <section class="intro">
-        <section>
-            <h2>Estatísticas</h2>
-            <div class="statsBox">
-                <h3><span style="color: var(--accent-secondary);" id="stats-vehicles">0</span><br>veículos</h3>
-                <h3><span style="color: var(--accent-secondary);" id="stats-lines">0</span><br>linhas</h3>
-            </div>
+    <div class="contents">
+        <section class="intro">
+            <section>
+                <h2>Estatísticas</h2>
+                <div class="statsBox">
+                    <h3><span style="color: var(--accent-secondary);" id="stats-vehicles">0</span><br>veículos</h3>
+                    <h3><span style="color: var(--accent-secondary);" id="stats-lines">0</span><br>linhas</h3>
+                </div>
+            </section>
+            <section class="div-split">
+                <h2>Pesquisar</h2>
+                <div class="searchContainer" style="position: relative;">
+                    <input id="search" placeholder="Selecione uma paragem" autocomplete="off">
+                    <div class="autocomplete hidden" id="autocomplete"></div>
+                </div>
+                <div class="buttonsRow">
+                    <button id="schedules" class="disabled">Ver horários</button>
+                </div>
+            </section>
         </section>
-        <section class="div-split">
-            <h2>Pesquisar</h2>
-            <div class="searchContainer" style="position: relative;">
-               <input id="search" placeholder="Selecione uma paragem" autocomplete="off">
-               <div class="autocomplete hidden" id="autocomplete"></div>
-            </div>
-            <div class="buttonsRow">
-                <button id="schedules" class="disabled">Ver horários</button>
-            </div>
-        </section>
-    </section>
+    </div>
     <div class="h-spacer"></div>
     <section class="map">
         <h2>Paragens</h2>
         <div class="map-container" id="map"></div>
     </section>
-
+    <div class="h-spacer"></div>
     <footer>
         <a href="/contactos/">Contactos</a>
         <span class="split">|</span><a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
@@ -75,7 +77,7 @@
                 let lines = document.getElementById("stats-lines")
                 vec.textContent = r.vehicles;
                 lines.textContent = r.lines;
-                if(r.vehicles === 1) {
+                if (r.vehicles === 1) {
                     vec.parentElement.innerHTML = vec.outerHTML + "<br>veículo"
                 }
                 vec.classList.remove("loading")

@@ -9,7 +9,7 @@ soundBtn.onclick = () => audio.play()
 
 let departuresEl = document.getElementById("departures")
 
-if(!stopInfo) stopInfo = fetch("https://api.carrismetropolitana.pt/stops/" + stopId).then(r => r.json())
+if (!stopInfo) stopInfo = fetch("https://api.carrismetropolitana.pt/stops/" + stopId).then(r => r.json())
 
 stopInfo.then(stopInfo => {
     document.querySelector('meta[property="og:title"]').setAttribute("content", "HoráriosLX | " + stopInfo.name);
@@ -24,6 +24,8 @@ stopInfo.then(stopInfo => {
         fetchBuses()
     }, 30 * 1000)
 })
+
+let mapLibLoaded = false;
 
 let vehicles;
 
@@ -46,10 +48,10 @@ function fetchBuses() {
         vehicles = null;
         let now = Date.now() / 1000
         let tempDiv = document.createElement("div")
-        departures = departures.filter(a => (a.estimated_arrival_unix > now || (!a.estimated_arrival_unix && a.scheduled_arrival_unix > now)) && !a.observed_arrival_unix)
+        departures = departures.filter(a => (a.estimated_arrival_unix > now || (!a.estimated_arrival_unix && a.scheduled_arrival_unix > (now - 30 * 60))) && !a.observed_arrival_unix)
         departures.sort((a, b) => (a.estimated_arrival_unix ? a.estimated_arrival_unix : a.scheduled_arrival_unix) - (b.estimated_arrival_unix ? b.estimated_arrival_unix : b.scheduled_arrival_unix))
-        departures = departures.slice(0, 25)
         let divs = []
+        divs = divs.slice(0, 40)
         await Promise.all(departures.map(async d => {
             if (!d.injected && !patternsCache[d.pattern_id]) {
                 patternsCache[d.pattern_id] = fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json());
@@ -81,7 +83,7 @@ function fetchBuses() {
                         d.vehicle_id = vehicle.id
                         d.timestamp = vehicle.timestamp
                     }
-                } else if(d.estimated_arrival) {
+                } else if (d.estimated_arrival) {
                     d.timestamp = vehicles.sort((a, b) => a.timestamp - b.timestamp)[0].timestamp
                 }
             }
@@ -102,6 +104,7 @@ function fetchBuses() {
                 d.estimated_arrival_unix = d.scheduled_arrival_unix;
                 d.injected = true;
             }
+            if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
             if (!notesCache[d.vehicle_id] && d.vehicle_id) {
                 notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r : { json: () => [] }).then(r => r.json());
             }
@@ -135,14 +138,14 @@ function fetchBuses() {
             bus.innerHTML = "<div class=\"info\"><p class=\"title " + (d.estimated_arrival ? (d.injected ? "injected" : "ontime") : "") + "\"><span class=\"line " + (d.line_id.startsWith("1") ? (shortLines.includes(d.line_id) ? "short" : "long") : "unknown") + "\">" + d.line_id + "</span>" + d.headsign + "</p><p class=\"schedule\">" + arrivalTime + "</p></div>"
             if (d.estimated_arrival) {
                 bus.classList.add("running")
-                bus.innerHTML += "<div class=\"details\"><p class=\"type\"><b>Tipo de veículo:</b> " + (d.vehicle_type || getVehicle(d.vehicle_id)) + "</b></p><p class=\"time " + arrivalSpan + "\">" + (d.estimated_arrival.includes(":") ? (Math.abs(arrivalDif < 2) ? "No horário previsto" : Math.abs(arrivalDif) + " mins " + (arrivalDif < 0 ? "adiantado" : "atrasado")) : d.estimated_arrival) + "</p></div>"
+                bus.innerHTML += "<div class=\"details\"><p class=\"type\"><b>Tipo de veículo:</b> " + (d.vehicle_type || getVehicle(d.vehicle_id)) + "</b></p><p class=\"time " + arrivalSpan + "\">" + (d.estimated_arrival.includes(":") ? (Math.abs(arrivalDif) < 3 ? "No horário previsto" : Math.abs(arrivalDif) + " mins " + (arrivalDif < 0 ? "adiantado" : "atrasado")) : d.estimated_arrival) + "</p></div>"
             }
             if (notesCache[d.vehicle_id] && notesCache[d.vehicle_id].then) notesCache[d.vehicle_id] = await Promise.resolve(notesCache[d.vehicle_id]);
-            
-            if(now > (d.timestamp + 2*60)) {
-                if(!notesCache[d.vehicle_id]) notesCache[d.vehicle_id] = []
-                let tsDif = Math.floor((now - d.timestamp)/60);
-                if(!notesCache[d.vehicle_id].find(a => a.includes("Erro:"))) notesCache[d.vehicle_id].push("Erro: este serviço não é atualizado há mais de " + (tsDif > 60 ? (Math.floor(tsDif/60) + " hora" + (tsDif < 120 ? "" : "s") + ".") : (Math.floor(tsDif) + " mins.")) );
+
+            if (now > (d.timestamp + 5 * 60)) {
+                if (!notesCache[d.vehicle_id]) notesCache[d.vehicle_id] = []
+                let tsDif = Math.floor((now - d.timestamp) / 60);
+                if (!notesCache[d.vehicle_id].find(a => a.includes("Erro:"))) notesCache[d.vehicle_id].push("Erro: este serviço não é atualizado há mais de " + (tsDif > 60 ? (Math.floor(tsDif / 60) + " hora" + (tsDif < 120 ? "" : "s") + ".") : (Math.floor(tsDif) + " mins.")));
             }
             if (notesCache[d.vehicle_id] && notesCache[d.vehicle_id].length > 0) {
                 bus.innerHTML += "<div class=\"alerts\">" + notesCache[d.vehicle_id].map(a => "<p>⚠️ " + a + "</p>").join("") + "</div>"
@@ -151,8 +154,9 @@ function fetchBuses() {
             divs.push({ arrival: (d.estimated_arrival_unix || d.scheduled_arrival_unix), div: bus })
         }))
         divs.sort((a, b) => a.arrival - b.arrival)
+        divs = divs.slice(0, 25)
         divs.map(a => tempDiv.appendChild(a.div))
-        if(departures.length === 0) {
+        if (departures.length === 0) {
             tempDiv.innerHTML = "<p>Não há serviços previstos nesta paragem.</p>"
         }
 
@@ -164,38 +168,143 @@ function fetchBuses() {
         }
         tempDiv.childNodes.forEach(node => {
             nodeEl = document.getElementById(node.id);
-            if(node.id === selectedService) {
+            if (node.id === selectedService) {
                 selectedDiv = nodeEl.appendChild(selectedDiv)
+                selectedDiv.querySelector("div.route").querySelector("#selectedStop").scrollIntoView({
+                    behavior: 'instant',
+                    block: 'center',
+                    inline: 'nearest'
+                });
             }
             nodeEl.onclick = async () => {
+                if (selectedDiv) selectedDiv.classList.add("hidden");
+                if (selectedService === node.id) {
+                    selectedDiv = null;
+                    selectedService = null;
+                    return;
+                };
                 selectedService = node.id;
-                if(selectedDiv) selectedDiv.classList.add("hidden")
-                selectedDiv = null;
                 let el = document.getElementById(node.id);
                 let data = node.id.split("&")
                 let departure = departures.find(a => a.trip_id === data[0] && a.stop_sequence.toString() === data[1])
-                if(!departure) return console.error("EXCEPTION: Couldn't find a departure for Trip-id: " + data[0] + " & Stop-sequence: " + data[1]);
+                if (!departure) return console.error("EXCEPTION: Couldn't find a departure for Trip-id: " + data[0] + " & Stop-sequence: " + data[1]);
                 let div = divsCache[node.id] || document.createElement("div")
-                divsCache[node.id] ? div.classList.remove("hidden") : div.classList.add("schedule-expandable")
+                div.classList.add("schedule-expandable")
                 let pattern = patternsCache[departure.pattern_id]
-                if(pattern.then) pattern = patternsCache[departure.pattern_id] = await Promise.resolve(pattern)
-                let div2 = loadDiv(div, pattern)
-                selectedDiv ? selectedDiv = div2.outerHTML : el.appendChild(div2)
+                div.classList.add("hidden")
+                if (pattern.then) pattern = patternsCache[departure.pattern_id] = await Promise.resolve(pattern)
+                let div2 = await Promise.resolve(loadDiv(div, pattern, node.id, departure))
+                el.appendChild(div2)
                 selectedDiv = div2;
+                setTimeout(() => {
+                    div2.classList.remove("hidden")
+                    r = div2.getElementsByTagName('div')[0]
+                    r.style.setProperty("--line-height", r.scrollHeight + "px")
+                    setTimeout(() => {
+                        r.querySelector("#selectedStop").scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    })
+                })
                 divsCache[node.id] = div2;
             }
         })
     })
 }
 
-function loadDiv(div, pattern, vec) {
+function loadDiv(div, pattern, id, vec) {
     let title = document.createElement("h2")
-    title.innerHTML = "<span class=\"line " + (shortLines.includes(pattern.line_id) ? "short" : "long")+ "\">" + pattern.line_id + "</span>" + pattern.long_name;            
+    title.innerHTML = pattern.long_name;
     div.innerHTML = "";
     div.appendChild(title)
     let route = document.createElement("div")
     route.classList.add("route")
-    route.innerHTML = pattern.path.map(a => "<span class=\"stop\">" + a.name + "</span>").join("")
+    let eta = "";
+    arrivalDif = vec.estimated_arrival_unix - vec.scheduled_arrival_unix
+    arrivalDif = Math.floor(arrivalDif / 60)
+    if (arrivalDif > 2) {
+        arrivalSpan = "delayed"
+    } else if (arrivalDif < -2) {
+        arrivalSpan = "early"
+    } else {
+        arrivalSpan = "ontime"
+    }
+    let time = vec.estimated_arrival_unix || vec.scheduled_arrival_unix
+    let timeDif = time - vec.scheduled_arrival_unix
+    time -= pattern.path.filter(a => a.index < vec.stop_sequence).reduce((acc, val) => acc += (val.travel_time || val.schedule.travel_time) * 60, 0)
+    let busStopSeq = (pattern.path.find(a => a.id === vec.currentLocation) || { index: 0 }).index
+    pattern.path.map(a => {
+        let e = document.createElement("span")
+        e.className = "stop"
+        if (a.index < busStopSeq) {
+            e.classList.add("passed")
+        }
+        if (a.id === stopId && a.index >= vec.stop_sequence) {
+            e.id = "selectedStop"
+        }
+        if (a.id === vec.currentLocation) {
+            if (!e.id) e.classList.add("bus-loc");
+            eta = "<span class=\"" + arrivalSpan + "\">A chegar</span><span class=\"split\"> | </span>"
+        } else if (eta !== "") {
+            eta = (Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time + timeDif) + "</span><span class=\"split\"> - </span>"
+        }
+        time += a.travel_time * 60 || a.schedule.travel_time * 60
+        e.innerHTML = eta + "<span>" + a.name + "</span>"
+        let e2 = document.createElement("span")
+        e2.className = "lines"
+        l = a.lines.filter(a => a !== pattern.line_id);
+        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line " + (shortLines.includes(a) ? "short" : "long") + "\">" + a + "</span>").join("")
+        route.appendChild(e)
+        route.appendChild(e2)
+    })
+    route.id = id + "-route"
+    route.style.setProperty('--pattern-color', pattern.color);
     div.appendChild(route)
+    if (((window.innerWidth > 0) ? window.innerWidth : screen.width) > 767) {
+        let map = document.createElement("div")
+        map.className = "route-map"
+        map.classList.add("loading")
+        map.id = id + "-map"
+        map.innerHTML = '<object data="/static/logo.svg" type="image/svg+xml"></object>'
+        if (!mapLibLoaded) {
+            let link = document.createElement("link")
+            link.href = "https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+            link.rel = "stylesheet"
+            link.type = 'text/css'
+            document.head.appendChild(link)
+            let script = document.createElement("script")
+            script.src = "https://unpkg.com/leaflet/dist/leaflet.js"
+            script.onload = () => genMap(map, pattern, vec)
+            document.head.appendChild(script)
+        } else {
+            genMap(map, pattern, vec)
+        }
+        map.onclick = (e) => e.stopImmediatePropagation()
+        div.appendChild(map)
+    }
     return div;
+}
+
+async function genMap(div, pattern, vehicle) {
+    div.classList.remove("loading")
+    if(stopInfo.then) stopInfo = await Promise.resolve(stopInfo)
+
+    map = L.map(div.id).setView([stopInfo.lat, stopInfo.lon], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        minZoom: 9,
+        attribution: '© OpenStreetMap',
+        useCache: true,
+        saveToCache: true,
+        useOnlyCache: false
+    }).addTo(map);
+
+    let shape = pattern.shape_id
+    
+}
+
+function makeTime(s) {
+    return new Date(s * 1000).toTimeString().split(' ')[0].split(":").slice(0, 2).join(":").replaceAll("00:", "24:").replaceAll("01:", "25:").replaceAll("02:", "26:").replaceAll("03:", "27:")
 }

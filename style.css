@@ -22,8 +22,13 @@ body {
     background-color: var(--light-gray);
     color: var(--dark-gray);
     margin: 0;
-    padding: .5em;
     height: 100%;
+    min-height: 100vh;
+    position: relative;
+}
+
+.contents {
+    padding: .5em;
 }
 
 header {
@@ -33,10 +38,9 @@ header {
     text-align: center;
     display: flex;
     align-items: center;
-    border-radius: 1em;
     box-shadow: 0 .1em .2em rgba(0, 0, 0, 1);
     position: fixed;
-    width: calc(100% - 2em);
+    width: calc(100% - 1em);
     z-index: 1000;
 }
 
@@ -410,7 +414,7 @@ h3 {
     transform: translate(-50%, -50%);
 }
 
-.loading::before, .departures-loading::after {
+.loading::before, .departures-loading::after, .route-map.loading::before {
     content: "";
     position: absolute;
     top: 0;
@@ -470,12 +474,14 @@ button.secondary:hover {
 }
 
 footer {
+    position: absolute;
+    bottom: 0;
+    width: calc(100% - 2em);
+    padding: 1em;
     margin-top: 20px;
     text-align: center;
-    padding: 20px;
     background-color: var(--accent-secondary);
     color: var(--white);
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
 }
 
 footer span {
@@ -614,9 +620,12 @@ section {
     background-color: white;
     border-radius: 1em;
     padding: .5em;
-    min-height: 80vh;
     margin-top: 1.5em;
     position: relative;
+}
+
+.departures #departures.departures-loading {
+    min-height: 80vh !important;
 }
 
 .departures #departures::before {
@@ -639,6 +648,10 @@ section {
     cursor:pointer;
     display: flex;
     flex-direction: column;
+}
+
+.departures #departures .bus:last-child {
+    margin-bottom: 0px !important;
 }
 
 .departures #departures .bus .info, .departures #departures .bus .details {
@@ -757,7 +770,8 @@ section {
 
 .departures #departures .bus .schedule {
     float: right;
-    max-width: 20%;
+    max-width: 30%;
+    min-width: 3em;
     font-weight: bold;
     font-size: 1.2em;
     overflow: hidden;
@@ -798,22 +812,62 @@ section {
     background-color: var(--white);
     padding: .5em;
     border-radius: .5em;
-    font-size: 1em;
-    max-height: 13em;
+    font-size: .75em;
+    max-height: 30em;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease; 
+    justify-content: space-between;
+}
+
+.schedule-expandable h2 {
+    font-size: 1.25em !important;
 }
 
 .schedule-expandable .route {
     overflow-y: scroll;
-    max-height: 10em;
+    height: 27em;
+    width: 50%;
+    position: relative;
     display: flex;
+    float: left;
     flex-direction: column;
+}
+
+.schedule-expandable .route-map {
+    overflow: hidden;
+    height: 32.4em;
+    width: 50%;
+    position: relative;
+    float: right;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.schedule-expandable .route-map object {
+    left: 25%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+}
+
+.schedule-expandable .route-map.loading {
+    overflow: hidden;
+    height: 27em;
+    width: 50%;
+    position: relative;
+    float: right;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
 }
 
 .schedule-expandable .route .stop {
     margin-left: 2em;
     position: relative;
     text-align: left;
-    width: calc(100% - 2em - 10px);
+    width: calc(100% - 3em);
     z-index: 1; 
     display: flex;
     align-items: center;
@@ -822,17 +876,157 @@ section {
     box-sizing: border-box;
 }
 
+.schedule-expandable .route .stop .split {
+    margin-left: .25em;
+    margin-right: .25em;
+    transform: translate(0, -.125em);
+    vertical-align: middle;
+}
+
+
+.schedule-expandable .route .stop .split {
+    margin-left: .25em;
+    margin-right: .25em;
+    transform: translate(0, -.125em);
+    vertical-align: middle;
+}
+
+.schedule-expandable .route .lines {
+    margin-top: 0.25em;
+    margin-left: 2.666em;
+    font-size: 0.75em;
+    min-height: 2.75em !important;
+    margin-right: 1em;
+    text-wrap: nowrap;
+    overflow-x: scroll;
+    scrollbar-width: none;
+    white-space: nowrap;
+}
+
+.schedule-expandable .route .lines:last-child {
+    margin-bottom: 0px !important;
+}
+
+.schedule-expandable .route::before {
+    content: '';
+    position: absolute;
+    display: block;
+    width: 1em;
+    top: 0em;
+    height: calc(var(--line-height, 100%) - 2.333em);
+    background-color: var(--pattern-color, #000000);
+    border-radius: 0.5em;
+    z-index: 0;
+}
+
+.schedule-expandable .route .stop::before {
+    content: '';
+    width: .6em;
+    height: .6em;
+    background-color: #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    left: -1.5em;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.schedule-expandable .route .stop.passed {
+    color: var(--scheduled);
+}
+
+.schedule-expandable .route .stop#selectedStop::before {
+    content: '';
+    width: .6em;
+    height: .6em;
+    background-color: #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    border-color: #000000;
+    border-style:solid;
+    border-width: .2em;
+    border-radius: 50%;
+    left: -1.5em;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.schedule-expandable .route .stop.bus-loc::before {
+    content: '';
+    width: .6em;
+    height: .6em;
+    background-color: var(--white) !important;
+    opacity: 0.8;
+    border-radius: 50%;
+    position: absolute;
+    border-radius: 50%;
+    left: -1.5em;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.schedule-expandable .route .stop.bus-loc::after {
+    content: '';
+    width: .6em;
+    height: .6em;
+    background-color: var(--white) !important;
+    opacity: 0.5;
+    border-radius: 50%;
+    position: absolute;
+    border-radius: 50%;
+    left: -1.5em;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    animation: blob 1s infinite;
+}
+
+.schedule-expandable .route .stop span.ontime {
+    color: var(--ontime);
+}
+
+.schedule-expandable .route .stop span.oldTime {
+    color: var(--gray);
+    text-decoration: line-through;
+    text-decoration-thickness: .125em;
+}
+
+.schedule-expandable .route .stop span.early {
+    color: var(--early);
+}
+
+.schedule-expandable .route .stop span.delayed {
+    color: var(--delayed);
+}
+
 .schedule-expandable h2 {
     font-size: 1em;
     color: black;
 }
 
 .schedule-expandable.hidden {
-    display: none;
+    max-height: 0em;
+    padding: 0em;
+    transition: max-height 0.4s ease, padding 0.4s ease; 
 }
 
 
-@media (max-width: 768px) {
+@media (max-width: 450px) {
+    body {
+        zoom: 90%;
+    }
+}
+
+@media (max-width: 380px) {
+    body {
+        zoom: 80%;
+    }
+}
+
+@media (max-width: 767px) {
     header .buttons {
         display: none;
     }
@@ -850,8 +1044,7 @@ section {
     header {
         padding: .25em;
         justify-content: center;
-        border-radius: .5em;
-        width: calc(100% - 1.5em);
+        width: calc(100% - .5em);
     }
 
     .h-spacer {
@@ -918,5 +1111,9 @@ section {
 
     .departures #departures .bus {
         font-size: .6em;
+    }
+
+    .schedule-expandable .route {
+        width: 100%;
     }
 }
