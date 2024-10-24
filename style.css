@@ -845,7 +845,13 @@ section {
     font-weight: bold;
 }
 
-.schedule-expandable .route-map object {
+.schedule-expandable .route-map .vehicle-marker {
+    position: absolute;  
+    left: 50%;
+    top: 50%;
+}
+
+.schedule-expandable .route-map object.loading {
     left: 25%;
     top: 25%;
     transform: translate(-50%, -50%);

@@ -82,7 +82,11 @@ function fetchBuses() {
                         }
                         d.vehicle_id = vehicle.id
                         d.timestamp = vehicle.timestamp
+                        d.injected = true;
                     }
+                    d.lat = vehicle.lat
+                    d.lon = vehicle.lon
+                    d.bearing = vehicle.bearing
                 } else if (d.estimated_arrival) {
                     d.timestamp = vehicles.sort((a, b) => a.timestamp - b.timestamp)[0].timestamp
                 }
@@ -155,10 +159,12 @@ function fetchBuses() {
         }))
         divs.sort((a, b) => a.arrival - b.arrival)
         divs = divs.slice(0, 25)
-        divs.map(a => tempDiv.appendChild(a.div))
-        if (departures.length === 0) {
-            tempDiv.innerHTML = "<p>Não há serviços previstos nesta paragem.</p>"
+        if (divs.length === 0) {
+            departuresEl.classList.remove("departures-loading")
+            departuresEl.innerHTML = "<p>Não há serviços previstos nesta paragem.</p>"
+            return;
         }
+        divs.map(a => tempDiv.appendChild(a.div))
 
         departuresEl.classList.remove("departures-loading")
         if (new Date().getHours() < 5) {
@@ -244,11 +250,12 @@ function loadDiv(div, pattern, id, vec) {
         if (a.id === stopId && a.index >= vec.stop_sequence) {
             e.id = "selectedStop"
         }
-        if (a.id === vec.currentLocation) {
+        if (a.id === vec.currentLocation && a.index <= vec.stop_sequence) {
             if (!e.id) e.classList.add("bus-loc");
             eta = "<span class=\"" + arrivalSpan + "\">A chegar</span><span class=\"split\"> | </span>"
+            if (a.index === 1) eta = eta.replaceAll("A chegar", "Partida")
         } else if (eta !== "") {
-            eta = (Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time + timeDif) + "</span><span class=\"split\"> - </span>"
+            eta = (Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time - timeDif) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time) + "</span><span class=\"split\"> - </span>"
         }
         time += a.travel_time * 60 || a.schedule.travel_time * 60
         e.innerHTML = eta + "<span>" + a.name + "</span>"
@@ -278,8 +285,9 @@ function loadDiv(div, pattern, id, vec) {
             script.src = "https://unpkg.com/leaflet/dist/leaflet.js"
             script.onload = () => genMap(map, pattern, vec)
             document.head.appendChild(script)
+            mapLibLoaded = true;
         } else {
-            genMap(map, pattern, vec)
+            setTimeout(() => genMap(map, pattern, vec))
         }
         map.onclick = (e) => e.stopImmediatePropagation()
         div.appendChild(map)
@@ -287,10 +295,11 @@ function loadDiv(div, pattern, id, vec) {
     return div;
 }
 
+let shapesCache = {}
+
 async function genMap(div, pattern, vehicle) {
     div.classList.remove("loading")
-    if(stopInfo.then) stopInfo = await Promise.resolve(stopInfo)
-
+    if (stopInfo.then) stopInfo = await Promise.resolve(stopInfo)
     map = L.map(div.id).setView([stopInfo.lat, stopInfo.lon], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -302,9 +311,46 @@ async function genMap(div, pattern, vehicle) {
     }).addTo(map);
 
     let shape = pattern.shape_id
-    
+
+    let shapeInfo;
+    if (shapesCache[shape]) shapeInfo = shapesCache[shape]
+    else {
+        shapeInfo = fetch(CLOUDFLARED + "shapes/" + shape).then(r => r.text())
+        shapesCache[shape] = shapeInfo;
+    }
+    if (shapeInfo.then) shapeInfo = await Promise.resolve(shapeInfo);
+    shapeInfo = shapeInfo.split("|")
+    shapeInfo = shapeInfo.map(a => a.split("+"))
+
+    L.geoJSON({
+        "type": "Feature",
+        "properties": {},
+        "geometry": {
+            "type": "LineString",
+            "coordinates": shapeInfo
+        }
+    }, {
+        style: function (feature) {
+            return { color: pattern.color, weight: 5 };
+        }
+    }).addTo(map);
+    if(vehicle.lat) createBusmarker(vehicle.lat, vehicle.lon, vehicle.bearing, map)
 }
 
 function makeTime(s) {
     return new Date(s * 1000).toTimeString().split(' ')[0].split(":").slice(0, 2).join(":").replaceAll("00:", "24:").replaceAll("01:", "25:").replaceAll("02:", "26:").replaceAll("03:", "27:")
+}
+
+function createBusmarker(lat, lng, rotation, map) {
+
+
+    var busIcon = L.divIcon({
+        className: "marker",
+        html: "<div class=\"vehicle-marker\" style=\"transform: translate(-50%, -50%) rotate(" + rotation + "deg) scale(50%)\"><object data=\"/static/bus.svg\" type=\"image/svg+xml\"></object></div>",
+        iconSize: [8, 8],
+        iconAnchor: [0, 0]
+    });
+    L.marker([lat, lng], {
+        icon: busIcon
+    }).addTo(map);
 }
