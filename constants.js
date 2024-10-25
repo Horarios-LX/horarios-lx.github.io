@@ -1,4 +1,5 @@
-const CLOUDFLARED = "https://transaction-piano-frames-foods.trycloudflare.com/"
+let CLOUDFLARED = "https://capital-doom-professor-airport.trycloudflare.com/"
+
 const API_BASE = "https://api.carrismetropolitana.pt";
 
 let stops;

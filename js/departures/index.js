@@ -69,10 +69,10 @@ function fetchBuses() {
                     if (!d.estimated_arrival) {
                         if (patternsCache[d.pattern_id].then) patternsCache[d.pattern_id] = await Promise.resolve(patternsCache[d.pattern_id])
                         let route = patternsCache[vehicle.pattern_id]
-                        let rS = route.path.indexOf(route.path.find(a => a.id === vehicle.stop_id && a.index <= d.stop_sequence))
+                        let rS = route.path.indexOf(route.path.find(a => a.id === vehicle.stop_id))
                         let rE = route.path.indexOf(route.path.find(a => a.id === stopId && a.index === d.stop_sequence))
                         d.currentStopIndex = rS;
-                        if (rE < rS || rS < 0) d.observed_arrival_unix = Date.now()
+                        if (rE < rS || rS < 1) d.observed_arrival_unix = Date.now()
                         let section = route.path.filter(a => route.path.indexOf(a) >= rS && route.path.indexOf(a) <= rE)
                         let time = 0;
                         section.forEach(arr => time += arr.schedule.travel_time)
@@ -95,18 +95,19 @@ function fetchBuses() {
                 if (patternsCache[d.pattern_id].then) patternsCache[d.pattern_id] = await Promise.resolve(patternsCache[d.pattern_id])
                 d.estimated_arrival = "Início de serviço"
                 let route = patternsCache[d.pattern_id]
-                let rS = 0
+                let rS = 1
                 let rE = route.path.indexOf(route.path.find(a => a.id === stopId && a.index === d.stop_sequence))
-                d.currentStopIndex = rS;
+                //d.currentStopIndex = rS;
                 let section = route.path.filter(a => route.path.indexOf(a) >= rS && route.path.indexOf(a) <= rE)
                 let time = 0;
                 section.forEach(arr => time += arr.schedule.travel_time)
-                if (rS > 0) {
-                    d.scheduled_arrival_unix = (now < d.scheduled_arrival_unix ? d.scheduled_arrival_unix : now) + time * 60;
+                if(d.scheduled_arrival_unix < now-time) d.scheduled_arrival_unix = now + time;
+                if (rS > 1) {
+                    d.scheduled_arrival_unix = d.scheduled_arrival_unix + time * 60;
                     d.scheduled_arrival = (new Date(d.scheduled_arrival_unix * 1000).toTimeString().split(' ')[0])
                 }
                 d.estimated_arrival_unix = d.scheduled_arrival_unix;
-                d.injected = true;
+                d.injected = false;
             }
             if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
             if (!notesCache[d.vehicle_id] && d.vehicle_id) {
@@ -157,6 +158,7 @@ function fetchBuses() {
             bus.id = d.trip_id + "&" + d.stop_sequence
             divs.push({ arrival: (d.estimated_arrival_unix || d.scheduled_arrival_unix), div: bus })
         }))
+        divs.filter(a => !a.observed_arrival_unix)
         divs.sort((a, b) => a.arrival - b.arrival)
         divs = divs.slice(0, 25)
         if (divs.length === 0) {
@@ -335,22 +337,4 @@ async function genMap(div, pattern, vehicle) {
         }
     }).addTo(map);
     if(vehicle.lat) createBusmarker(vehicle.lat, vehicle.lon, vehicle.bearing, map)
-}
-
-function makeTime(s) {
-    return new Date(s * 1000).toTimeString().split(' ')[0].split(":").slice(0, 2).join(":").replaceAll("00:", "24:").replaceAll("01:", "25:").replaceAll("02:", "26:").replaceAll("03:", "27:")
-}
-
-function createBusmarker(lat, lng, rotation, map) {
-
-
-    var busIcon = L.divIcon({
-        className: "marker",
-        html: "<div class=\"vehicle-marker\" style=\"transform: translate(-50%, -50%) rotate(" + rotation + "deg) scale(50%)\"><object data=\"/static/bus.svg\" type=\"image/svg+xml\"></object></div>",
-        iconSize: [8, 8],
-        iconAnchor: [0, 0]
-    });
-    L.marker([lat, lng], {
-        icon: busIcon
-    }).addTo(map);
 }
