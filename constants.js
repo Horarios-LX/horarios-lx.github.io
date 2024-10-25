@@ -1,6 +1,6 @@
 let CLOUDFLARED = "https://capital-doom-professor-airport.trycloudflare.com/"
 
-const API_BASE = "https://api.carrismetropolitana.pt";
+const API_BASE = "https://api.carrismetropolitana.pt/";
 
 let stops;
 

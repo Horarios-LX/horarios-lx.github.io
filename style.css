@@ -909,6 +909,11 @@ section {
     white-space: nowrap;
 }
 
+.schedule-expandable .route .lines.passed .line {
+    background-color: #acacac !important;
+    opacity: 0.5;
+}
+
 .schedule-expandable .route .lines:last-child {
     margin-bottom: 0px !important;
 }
@@ -1121,5 +1126,9 @@ section {
 
     .schedule-expandable .route {
         width: 100%;
+    }
+
+    .schedule-expandable {
+        font-size: 1em;
     }
 }

@@ -44,70 +44,69 @@ function openMenu(id) {
 }
 
 function fetchBuses() {
-    fetch("https://api.carrismetropolitana.pt/stops/" + stopId + "/realtime").then(r => r.json()).then(async departures => {
+    fetch(API_BASE + "stops/" + stopId + "/realtime").then(r => r.json()).then(async departures => {
         vehicles = null;
         let now = Date.now() / 1000
         let tempDiv = document.createElement("div")
         departures = departures.filter(a => (a.estimated_arrival_unix > now || (!a.estimated_arrival_unix && a.scheduled_arrival_unix > (now - 30 * 60))) && !a.observed_arrival_unix)
         departures.sort((a, b) => (a.estimated_arrival_unix ? a.estimated_arrival_unix : a.scheduled_arrival_unix) - (b.estimated_arrival_unix ? b.estimated_arrival_unix : b.scheduled_arrival_unix))
         let divs = []
-        divs = divs.slice(0, 40)
+        departures = departures.slice(0, 40)
+        vehicles = fetch(CLOUDFLARED + "vehicles").then(r => r.json()).catch(r => fetch(API_BASE + "vehicles").then(r => r.json()))
         await Promise.all(departures.map(async d => {
-            if (!d.injected && !patternsCache[d.pattern_id]) {
-                patternsCache[d.pattern_id] = fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json());
+            if (!patternsCache[d.pattern_id]) {
+                patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r[0]).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
             }
-            if (!d.preFetched) {
-                if (!vehicles) vehicles = fetch(CLOUDFLARED + "vehicles").then(r => r.json()).catch(e => fetch("https://api.carrismetropolitana.pt/vehicles").then(r => r.json()));
-                if (vehicles.then) vehicles = await Promise.resolve(vehicles)
-                let b = vehicles.find(a => a.id === d.vehicle_id)
-                if (b && b.trip_id !== d.trip_id) {
-                    return;
-                }
-                let vehicle = vehicles.find(a => a.trip_id === d.trip_id || a.id === d.vehicle_id)
-                if (vehicle) {
-                    d.currentLocation = vehicle.stop_id;
-                    if (!d.estimated_arrival) {
-                        if (patternsCache[d.pattern_id].then) patternsCache[d.pattern_id] = await Promise.resolve(patternsCache[d.pattern_id])
-                        let route = patternsCache[vehicle.pattern_id]
-                        let rS = route.path.indexOf(route.path.find(a => a.id === vehicle.stop_id))
-                        let rE = route.path.indexOf(route.path.find(a => a.id === stopId && a.index === d.stop_sequence))
-                        d.currentStopIndex = rS;
-                        if (rE < rS || rS < 1) d.observed_arrival_unix = Date.now()
-                        let section = route.path.filter(a => route.path.indexOf(a) >= rS && route.path.indexOf(a) <= rE)
-                        let time = 0;
-                        section.forEach(arr => time += arr.schedule.travel_time)
-                        if (rS > 0) {
-                            d.estimated_arrival_unix = vehicle.timestamp + time * 60;
-                            d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
+            if (vehicles.then) vehicles = await Promise.resolve(vehicles);
+
+            let vec = vehicles.find(a => a.trip_id === d.trip_id);
+            if (!d.vehicle_id && vec) {
+                d.vehicle_id = vec.id
+            } else if (!vec) {
+                vec = vehicles.find(a => a.vehicle_id === d.vehicle_id);
+            }
+
+            if (vec) {
+                d.lat = vec.lat;
+                d.lon = vec.lon;
+                d.bearing = vec.bearing;
+                d.stopIndex
+                d.current_stop = vec.stop_id;
+                pattern = patternsCache[d.pattern_id]
+                if (pattern.then) pattern = await Promise.resolve(pattern);
+                patternsCache[d.pattern_id] = pattern;
+                busLoc = pattern.path.filter(a => a.id === vec.stop_id).sort((a, b) => Math.abs(a.index - d.stop_sequence) - Math.abs(b.index - d.stop_sequence))
+                if (busLoc.length > 1 && busLoc[0].index < busLoc[1].index) return
+                busLocIndex = pattern.path.indexOf(busLoc[0])
+                routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= busLocIndex && pattern.path.indexOf(a) < d.stop_sequence)
+                if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
+                let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+                let eta = now + timeDif;
+                if(busLoc.length > 1) {
+                    busLocIndex2 = pattern.path.indexOf(busLoc[1])
+                    routeSection = pattern.path.filter(a => pattern.path.indexOf(a) > busLocIndex2 && pattern.path.indexOf(a) < d.stop_sequence)
+                    if (routeSection.length !== 0 || (busLocIndex + 1) === d.stop_sequence) { 
+                        let timeDif1 = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+                        if(Math.abs(d.scheduled_arrival_unix - (now + timeDif1)) < Math.abs(d.scheduled_arrival_unix - eta)) {
+                            timeDif = timeDif1; 
+                            eta = now + timeDif;
+                            busLocIndex = busLocIndex2
                         }
-                        d.vehicle_id = vehicle.id
-                        d.timestamp = vehicle.timestamp
-                        d.injected = true;
                     }
-                    d.lat = vehicle.lat
-                    d.lon = vehicle.lon
-                    d.bearing = vehicle.bearing
-                } else if (d.estimated_arrival) {
-                    d.timestamp = vehicles.sort((a, b) => a.timestamp - b.timestamp)[0].timestamp
                 }
+                if (busLocIndex === 0) d.status = "Início de serviço";
+                if (!d.estimated_arrival_unix) {
+                    d.estimated_arrival_unix = eta
+                    if(d.status && d.estimated_arrival_unix < d.scheduled_arrival_unix) d.estimated_arrival_unix = d.scheduled_arrival_unix
+                    d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
+                    d.injected = true;
+                }
+                d.stop_index = busLocIndex+1;
+                d.delay = d.estimated_arrival_unix - d.scheduled_arrival_unix;
             }
-            if (d.vehicle_id && !d.estimated_arrival) {
-                if (patternsCache[d.pattern_id].then) patternsCache[d.pattern_id] = await Promise.resolve(patternsCache[d.pattern_id])
-                d.estimated_arrival = "Início de serviço"
-                let route = patternsCache[d.pattern_id]
-                let rS = 1
-                let rE = route.path.indexOf(route.path.find(a => a.id === stopId && a.index === d.stop_sequence))
-                //d.currentStopIndex = rS;
-                let section = route.path.filter(a => route.path.indexOf(a) >= rS && route.path.indexOf(a) <= rE)
-                let time = 0;
-                section.forEach(arr => time += arr.schedule.travel_time)
-                if(d.scheduled_arrival_unix < now-time) d.scheduled_arrival_unix = now + time;
-                if (rS > 1) {
-                    d.scheduled_arrival_unix = d.scheduled_arrival_unix + time * 60;
-                    d.scheduled_arrival = (new Date(d.scheduled_arrival_unix * 1000).toTimeString().split(' ')[0])
-                }
-                d.estimated_arrival_unix = d.scheduled_arrival_unix;
-                d.injected = false;
+
+            if (!patternsCache[d.pattern_id]) {
+                patternsCache[d.pattern_id] = fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json());
             }
             if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
             if (!notesCache[d.vehicle_id] && d.vehicle_id) {
@@ -122,20 +121,19 @@ function fetchBuses() {
                 let dif = d.estimated_arrival_unix - now;
                 mins = Math.floor(dif / 60)
                 if (mins > 59) mins = "59+"
-                if (d.current_stop === stopId || mins < 1) {
+                if ((d.current_stop === stopId || mins < 1) && !d.status) {
                     arrivalTime = "A chegar"
                 } else {
                     arrivalTime = ((arrivalDif === 0 || !d.estimated_arrival.includes(":")) ? d.estimated_arrival.split(":").splice(0, 2).join(":") : "<span class=\"oldTime\">" + d.scheduled_arrival.split(":").splice(0, 2).join(":") + "</span>" + " | " + d.estimated_arrival.split(":").splice(0, 2).join(":")) //mins + " min" + (mins === 1 ? "" : "s")
                 }
-                if (arrivalDif > 2) {
+                if (d.status) {
+                    arrivalSpan = ""
+                } else if (arrivalDif > 2) {
                     arrivalSpan = "delayed"
                 } else if (arrivalDif < -2) {
                     arrivalSpan = "early"
                 } else if (d.estimated_arrival.includes(":")) {
                     arrivalSpan = "ontime"
-                }
-                if (!d.estimated_arrival.includes(":")) {
-                    arrivalTime = d.scheduled_arrival.split(":").slice(0, 2).join(":")
                 }
             }
             let bus = document.createElement("div")
@@ -143,7 +141,7 @@ function fetchBuses() {
             bus.innerHTML = "<div class=\"info\"><p class=\"title " + (d.estimated_arrival ? (d.injected ? "injected" : "ontime") : "") + "\"><span class=\"line " + (d.line_id.startsWith("1") ? (shortLines.includes(d.line_id) ? "short" : "long") : "unknown") + "\">" + d.line_id + "</span>" + d.headsign + "</p><p class=\"schedule\">" + arrivalTime + "</p></div>"
             if (d.estimated_arrival) {
                 bus.classList.add("running")
-                bus.innerHTML += "<div class=\"details\"><p class=\"type\"><b>Tipo de veículo:</b> " + (d.vehicle_type || getVehicle(d.vehicle_id)) + "</b></p><p class=\"time " + arrivalSpan + "\">" + (d.estimated_arrival.includes(":") ? (Math.abs(arrivalDif) < 3 ? "No horário previsto" : Math.abs(arrivalDif) + " mins " + (arrivalDif < 0 ? "adiantado" : "atrasado")) : d.estimated_arrival) + "</p></div>"
+                bus.innerHTML += "<div class=\"details\"><p class=\"type\"><b>Tipo de veículo:</b> " + (d.vehicle_type || getVehicle(d.vehicle_id)) + "</b></p><p class=\"time " + arrivalSpan + "\">" + (d.status ? d.status : (Math.abs(arrivalDif) < 3 ? "No horário previsto" : Math.abs(arrivalDif) + " mins " + (arrivalDif < 0 ? "adiantado" : "atrasado"))) + "</p></div>"
             }
             if (notesCache[d.vehicle_id] && notesCache[d.vehicle_id].then) notesCache[d.vehicle_id] = await Promise.resolve(notesCache[d.vehicle_id]);
 
@@ -170,7 +168,7 @@ function fetchBuses() {
 
         departuresEl.classList.remove("departures-loading")
         if (new Date().getHours() < 5) {
-            departuresEl.innerHTML = tempDiv.outerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:");
+            departuresEl.innerHTML = tempDiv.outerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
         } else {
             departuresEl.innerHTML = tempDiv.outerHTML.replaceAll("24:", "(+1) 00:").replaceAll("25:", "(+1) 01:").replaceAll("26:", "(+1) 02:").replaceAll("27:", "(+1) 03:");
         }
@@ -239,32 +237,39 @@ function loadDiv(div, pattern, id, vec) {
     } else {
         arrivalSpan = "ontime"
     }
-    let time = vec.estimated_arrival_unix || vec.scheduled_arrival_unix
-    let timeDif = time - vec.scheduled_arrival_unix
-    time -= pattern.path.filter(a => a.index < vec.stop_sequence).reduce((acc, val) => acc += (val.travel_time || val.schedule.travel_time) * 60, 0)
-    let busStopSeq = (pattern.path.find(a => a.id === vec.currentLocation) || { index: 0 }).index
+    routeSection = pattern.path.filter(a => (pattern.path.indexOf(a) + 1) >= vec.stop_index && pattern.path.indexOf(a) < vec.stop_sequence)
+    let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+    let timeDelay = vec.delay
+    let time = (vec.estimated_arrival_unix || vec.scheduled_arrival_unix) - timeDif;
     pattern.path.map(a => {
         let e = document.createElement("span")
         e.className = "stop"
-        if (a.index < busStopSeq) {
+        if (a.index < vec.stop_index) {
             e.classList.add("passed")
         }
-        if (a.id === stopId && a.index >= vec.stop_sequence) {
+        if (a.index === (vec.stop_sequence)) {
             e.id = "selectedStop"
         }
-        if (a.id === vec.currentLocation && a.index <= vec.stop_sequence) {
+        if (a.index === (vec.stop_index)) {
             if (!e.id) e.classList.add("bus-loc");
+            time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
             eta = "<span class=\"" + arrivalSpan + "\">A chegar</span><span class=\"split\"> | </span>"
             if (a.index === 1) eta = eta.replaceAll("A chegar", "Partida")
         } else if (eta !== "") {
-            eta = (Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time - timeDif) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time) + "</span><span class=\"split\"> - </span>"
+            time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
+            eta = (Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time - timeDelay) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time) + "</span><span class=\"split\"> - </span>"
         }
-        time += a.travel_time * 60 || a.schedule.travel_time * 60
         e.innerHTML = eta + "<span>" + a.name + "</span>"
         let e2 = document.createElement("span")
         e2.className = "lines"
+        if(a.index < vec.stop_index) e2.classList.add("passed")
         l = a.lines.filter(a => a !== pattern.line_id);
         e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line " + (shortLines.includes(a) ? "short" : "long") + "\">" + a + "</span>").join("")
+        if (new Date().getHours() < 5) {
+            e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
+        } else {
+            e.innerHTML = e.innerHTML.replaceAll("24:", "(+1) 00:").replaceAll("25:", "(+1) 01:").replaceAll("26:", "(+1) 02:").replaceAll("27:", "(+1) 03:");
+        }
         route.appendChild(e)
         route.appendChild(e2)
     })
@@ -300,19 +305,21 @@ function loadDiv(div, pattern, id, vec) {
 let shapesCache = {}
 
 async function genMap(div, pattern, vehicle) {
+    var selectedIcon = L.icon( {
+        iconUrl: (shortLines.includes(pattern.line_id) ? "/static/selShort.png" : "/static/selLong.png"),
+        iconAnchor: [12, 41],
+        popupAnchor: [0, -40]
+    })
+
     div.classList.remove("loading")
     if (stopInfo.then) stopInfo = await Promise.resolve(stopInfo)
     map = L.map(div.id).setView([stopInfo.lat, stopInfo.lon], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        minZoom: 9,
-        attribution: '© OpenStreetMap',
-        useCache: true,
-        saveToCache: true,
-        useOnlyCache: false
-    }).addTo(map);
 
     let shape = pattern.shape_id
+
+    var marker = L.marker([parseFloat(stopInfo.lat), parseFloat(stopInfo.lon)], {icon: selectedIcon}).addTo(map)
+
+    marker.openPopup();
 
     let shapeInfo;
     if (shapesCache[shape]) shapeInfo = shapesCache[shape]
@@ -336,5 +343,13 @@ async function genMap(div, pattern, vehicle) {
             return { color: pattern.color, weight: 5 };
         }
     }).addTo(map);
-    if(vehicle.lat) createBusmarker(vehicle.lat, vehicle.lon, vehicle.bearing, map)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        minZoom: 6,
+        attribution: '© OpenStreetMap',
+        useCache: true,
+        saveToCache: true,
+        useOnlyCache: false
+    }).addTo(map);
+    if (vehicle.lat) createBusmarker(vehicle.lat, vehicle.lon, vehicle.bearing, map)
 }
