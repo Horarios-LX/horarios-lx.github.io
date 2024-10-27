@@ -33,20 +33,16 @@ let patternsCache = {}
 
 let notesCache = {}
 
-let selectedService;
+let divsCache = {}
 
-let selectedDiv;
+let selected = {};
 
-let divsCache = {};
-
-function openMenu(id) {
-    alert(id)
-}
+let now;
 
 function fetchBuses() {
     fetch(API_BASE + "stops/" + stopId + "/realtime").then(r => r.json()).then(async departures => {
         vehicles = null;
-        let now = Date.now() / 1000
+        now = Date.now() / 1000
         let tempDiv = document.createElement("div")
         departures = departures.filter(a => (a.estimated_arrival_unix > now || (!a.estimated_arrival_unix && a.scheduled_arrival_unix > (now - 30 * 60))) && !a.observed_arrival_unix)
         departures.sort((a, b) => (a.estimated_arrival_unix ? a.estimated_arrival_unix : a.scheduled_arrival_unix) - (b.estimated_arrival_unix ? b.estimated_arrival_unix : b.scheduled_arrival_unix))
@@ -64,7 +60,22 @@ function fetchBuses() {
                 d.vehicle_id = vec.id
             } else if (!vec) {
                 vec = vehicles.find(a => a.vehicle_id === d.vehicle_id);
+            } 
+            if (!vec && d.estimated_arrival_unix) {
+                d.estimated_arrival_unix = null;
+                d.estimated_arrival = null;
             }
+
+            /*
+                TEMP FIX
+            */
+            if ((d.estimated_arrival_unix - d.scheduled_arrival_unix) > 30 * 60 && d.estimated_arrival_unix) {
+                d.estimated_arrival_unix -= (60 * 60);
+                d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
+            }
+
+            // Invalidates time (and recalculates it) if the ETA given by the API is a timestamp in the past.
+            if(d.estimated_arrival_unix < now && !d.observed_arrival_unix) d.estimated_arrival_unix = null;
 
             if (vec) {
                 d.lat = vec.lat;
@@ -76,6 +87,7 @@ function fetchBuses() {
                 if (pattern.then) pattern = await Promise.resolve(pattern);
                 patternsCache[d.pattern_id] = pattern;
                 let eta;
+                
                 if (vec.stop_sequence) {
                     busLocIndex = vec.stop_sequence - 1;
                     routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= (busLocIndex) && pattern.path.indexOf(a) < d.stop_sequence)
@@ -105,18 +117,12 @@ function fetchBuses() {
                 }
                 if (busLocIndex === 0) d.status = "Início de serviço";
 
-                /*
-                TEMP FIX
-                */
-
-                if ((d.estimated_arrival_unix - d.scheduled_arrival_unix) > 30 * 60) d.estimated_arrival_unix -= 60 * 60;
-
                 if (!d.estimated_arrival_unix) {
                     d.estimated_arrival_unix = eta
-                    if (d.status && d.estimated_arrival_unix < d.scheduled_arrival_unix) d.estimated_arrival_unix = d.scheduled_arrival_unix
-                    d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
-                    //d.injected = true;
+                    d.injected = true;
                 }
+                if (d.status && d.estimated_arrival_unix < d.scheduled_arrival_unix) d.estimated_arrival_unix = d.scheduled_arrival_unix
+                d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
                 d.stop_index = busLocIndex + 1;
                 d.delay = d.estimated_arrival_unix - d.scheduled_arrival_unix;
             }
@@ -137,7 +143,7 @@ function fetchBuses() {
                 let dif = d.estimated_arrival_unix - now;
                 mins = Math.floor(dif / 60)
                 if (mins > 59) mins = "59+"
-                if ((d.current_stop === stopId || mins < 1) && !d.status) {
+                if ((d.stop_sequence === d.stop_index || mins < 1) && !d.status) {
                     arrivalTime = "A chegar"
                 } else {
                     arrivalTime = ((arrivalDif === 0 || !d.estimated_arrival.includes(":")) ? d.estimated_arrival.split(":").splice(0, 2).join(":") : "<span class=\"oldTime\">" + d.scheduled_arrival.split(":").splice(0, 2).join(":") + "</span>" + " | " + d.estimated_arrival.split(":").splice(0, 2).join(":")) //mins + " min" + (mins === 1 ? "" : "s")
@@ -188,60 +194,82 @@ function fetchBuses() {
         } else {
             departuresEl.innerHTML = tempDiv.outerHTML.replaceAll("24:", "(+1) 00:").replaceAll("25:", "(+1) 01:").replaceAll("26:", "(+1) 02:").replaceAll("27:", "(+1) 03:");
         }
-        tempDiv.childNodes.forEach(node => {
+        tempDiv.childNodes.forEach(async node => {
             nodeEl = document.getElementById(node.id);
-            if (node.id === selectedService) {
-                selectedDiv = nodeEl.appendChild(selectedDiv)
-                selectedDiv.querySelector("div.route").querySelector("#selectedStop").scrollIntoView({
-                    behavior: 'instant',
-                    block: 'center',
-                    inline: 'nearest'
-                });
-                Promise.resolve(loadDiv(div, pattern, node.id, departure))
-            }
-            nodeEl.onclick = async () => {
-                if (selectedDiv) selectedDiv.classList.add("hidden");
-                if (selectedService === node.id) {
-                    selectedDiv = null;
-                    selectedService = null;
-                    return;
-                };
-                selectedService = node.id;
-                let el = document.getElementById(node.id);
-                let data = node.id.split("&")
-                let departure = departures.find(a => a.trip_id === data[0] && a.stop_sequence.toString() === data[1])
-                if (!departure) return console.error("EXCEPTION: Couldn't find a departure for Trip-id: " + data[0] + " & Stop-sequence: " + data[1]);
-                let div = divsCache[node.id] || document.createElement("div")
-                div.classList.add("schedule-expandable")
-                let pattern = patternsCache[departure.pattern_id]
-                div.classList.add("hidden")
-                if (pattern.then) pattern = patternsCache[departure.pattern_id] = await Promise.resolve(pattern)
-                let div2 = await Promise.resolve(loadDiv(div, pattern, node.id, departure))
-                el.appendChild(div2)
-                selectedDiv = div2;
-                setTimeout(() => {
-                    div2.classList.remove("hidden")
-                    r = div2.getElementsByTagName('div')[0]
+            nodeEl.onclick = () => onclick(node, departures)
+            if (divsCache[node.id]) {
+                div = divsCache[node.id];
+                div.onclick = () => onclick(node, departures)
+                nodeEl.appendChild(div)
+                if (selected.id !== node.id) {
+                    div.classList.add("hidden")
+                } else {
+                    let data = node.id.split("&")
+                    let departure = departures.find(a => a.trip_id === data[0] && a.stop_sequence.toString() === data[1])
+                    if (!departure) return console.error("EXCEPTION: Couldn't find a departure for Trip-id: " + data[0] + " & Stop-sequence: " + data[1]);
+
+                    let pattern = patternsCache[departure.pattern_id]
+                    if (pattern.then) pattern = patternsCache[departure.pattern_id] = await Promise.resolve(pattern)
+                    div.innerHTML = genDiv(pattern, node.id, departure);
+                    r = div.getElementsByTagName('div')[0]
+                    r.onscroll = () => {
+                        selected.scroll = r.scrollTop
+                    }
                     r.style.setProperty("--line-height", r.scrollHeight + "px")
-                    setTimeout(() => {
-                        r.querySelector("#selectedStop").scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center',
-                            inline: 'nearest'
-                        });
-                    })
-                })
-                divsCache[node.id] = div2;
+                    div.classList.remove("hidden")
+                    r.scrollTop = selected.scroll; 
+                }
             }
         })
     })
 }
 
-function loadDiv(div, pattern, id, vec) {
+async function onclick(node, departures) {
+    if (selected.id === node.id) {
+        selected.div.classList.add("hidden")
+        selected = {}
+        return;
+    } else if (selected.id) {
+        selected.div.classList.add("hidden")
+    }
+    let el = document.getElementById(node.id);
+    let data = node.id.split("&")
+    let departure = departures.find(a => a.trip_id === data[0] && a.stop_sequence.toString() === data[1])
+    if (!departure) return console.error("EXCEPTION: Couldn't find a departure for Trip-id: " + data[0] + " & Stop-sequence: " + data[1]);
+    let div = divsCache[node.id]
+    if (!div) {
+        div = document.createElement("div")
+        el.appendChild(div)
+        divsCache[node.id] = div;
+    }
+    let pattern = patternsCache[departure.pattern_id]
+    if (pattern.then) pattern = patternsCache[departure.pattern_id] = await Promise.resolve(pattern)
+    selected = { id: node.id, div: div }
+    div.classList.add("schedule-expandable")
+    div.classList.add("hidden")
+    div.innerHTML = genDiv(pattern, node.id, departure)
+    setTimeout(() => {
+        div.classList.remove("hidden")
+        r = div.getElementsByTagName('div')[0]
+        r.onscroll = () => {
+            selected.scroll = r.scrollTop
+        }
+        r.style.setProperty("--line-height", r.scrollHeight + "px")
+        setTimeout(() => {
+            r.querySelector("#selectedStop").scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+            });
+        })
+    })
+}
+
+function genDiv(pattern, id, vec) {
+    let tdiv = document.createElement("tdiv")
     let title = document.createElement("h2")
-    title.innerHTML = pattern.long_name;
-    div.innerHTML = "";
-    div.appendChild(title)
+    title.innerHTML = (pattern.long_name.name || pattern.long_name);
+    tdiv.appendChild(title)
     let route = document.createElement("div")
     route.classList.add("route")
     let eta = "";
@@ -254,7 +282,7 @@ function loadDiv(div, pattern, id, vec) {
     } else {
         arrivalSpan = "ontime"
     }
-    routeSection = pattern.path.filter(a => (pattern.path.indexOf(a) + 1) >= vec.stop_index && pattern.path.indexOf(a) < vec.stop_sequence)
+    routeSection = pattern.path.filter(a => (pattern.path.indexOf(a) + 1) >= (vec.stop_index || 0) && pattern.path.indexOf(a) < vec.stop_sequence)
     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
     let timeDelay = vec.delay
     let time = (vec.estimated_arrival_unix || vec.scheduled_arrival_unix) - timeDif;
@@ -267,7 +295,10 @@ function loadDiv(div, pattern, id, vec) {
         if (a.index === (vec.stop_sequence)) {
             e.id = "selectedStop"
         }
-        if (a.index === (vec.stop_index)) {
+        if (!timeDelay) {
+            time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
+            eta = "<span>" + makeTime(time) + "</span><span class=\"split\"> - </span>"
+        } else if (a.index === (vec.stop_index)) {
             if (!e.id) e.classList.add("bus-loc");
             time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
             eta = "<span class=\"" + arrivalSpan + "\">A chegar</span><span class=\"split\"> | </span>"
@@ -292,81 +323,6 @@ function loadDiv(div, pattern, id, vec) {
     })
     route.id = id + "-route"
     route.style.setProperty('--pattern-color', pattern.color);
-    div.appendChild(route)
-    if (((window.innerWidth > 0) ? window.innerWidth : screen.width) > 767) {
-        let map = document.createElement("div")
-        map.className = "route-map"
-        map.classList.add("loading")
-        map.id = id + "-map"
-        map.innerHTML = '<object data="/static/logo.svg" type="image/svg+xml"></object>'
-        if (!mapLibLoaded) {
-            let link = document.createElement("link")
-            link.href = "https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-            link.rel = "stylesheet"
-            link.type = 'text/css'
-            document.head.appendChild(link)
-            let script = document.createElement("script")
-            script.src = "https://unpkg.com/leaflet/dist/leaflet.js"
-            script.onload = () => genMap(map, pattern, vec)
-            document.head.appendChild(script)
-            mapLibLoaded = true;
-        } else {
-            setTimeout(() => genMap(map, pattern, vec))
-        }
-        map.onclick = (e) => e.stopImmediatePropagation()
-        div.appendChild(map)
-    }
-    return div;
-}
-
-let shapesCache = {}
-
-async function genMap(div, pattern, vehicle) {
-    var selectedIcon = L.icon({
-        iconUrl: (shortLines.includes(pattern.line_id) ? "/static/selShort.png" : "/static/selLong.png"),
-        iconAnchor: [12, 41],
-        popupAnchor: [0, -40]
-    })
-
-    div.classList.remove("loading")
-    if (stopInfo.then) stopInfo = await Promise.resolve(stopInfo)
-    map = L.map(div.id).setView([stopInfo.lat, stopInfo.lon], 16);
-
-    let shape = pattern.shape_id
-
-    var marker = L.marker([parseFloat(stopInfo.lat), parseFloat(stopInfo.lon)], { icon: selectedIcon }).addTo(map)
-
-    marker.openPopup();
-
-    let shapeInfo;
-    if (shapesCache[shape]) shapeInfo = shapesCache[shape]
-    else {
-        shapeInfo = fetch(CLOUDFLARED + "shapes/" + shape).then(r => r.text())
-        shapesCache[shape] = shapeInfo;
-    }
-    if (shapeInfo.then) shapeInfo = await Promise.resolve(shapeInfo);
-    shapeInfo = shapeInfo.split("|")
-    shapeInfo = shapeInfo.map(a => a.split("+"))
-
-    L.geoJSON({
-        "type": "Feature",
-        "properties": {},
-        "geometry": {
-            "type": "LineString",
-            "coordinates": shapeInfo
-        }
-    }, {
-        style: function (feature) {
-            return { color: pattern.color, weight: 5 };
-        }
-    }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        minZoom: 6,
-        attribution: '© OpenStreetMap',
-        useCache: true,
-        saveToCache: true,
-        useOnlyCache: false
-    }).addTo(map);
-    if (vehicle.lat) createBusmarker(vehicle.lat, vehicle.lon, vehicle.bearing, map)
+    tdiv.appendChild(route)
+    return tdiv.outerHTML;
 }

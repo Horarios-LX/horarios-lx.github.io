@@ -826,7 +826,7 @@ section {
 .schedule-expandable .route {
     overflow-y: scroll;
     height: 27em;
-    width: 50%;
+    width: 100%;
     position: relative;
     display: flex;
     float: left;
