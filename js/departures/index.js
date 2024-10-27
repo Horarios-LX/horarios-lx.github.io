@@ -55,7 +55,7 @@ function fetchBuses() {
         vehicles = fetch(CLOUDFLARED + "vehicles").then(r => r.json()).catch(r => fetch(API_BASE + "vehicles").then(r => r.json()))
         await Promise.all(departures.map(async d => {
             if (!patternsCache[d.pattern_id]) {
-                patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r[0]).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
+                patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
             }
             if (vehicles.then) vehicles = await Promise.resolve(vehicles);
 
