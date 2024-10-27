@@ -75,22 +75,30 @@ function fetchBuses() {
                 pattern = patternsCache[d.pattern_id]
                 if (pattern.then) pattern = await Promise.resolve(pattern);
                 patternsCache[d.pattern_id] = pattern;
-                busLoc = pattern.path.filter(a => a.id === vec.stop_id).sort((a, b) => Math.abs(a.index - d.stop_sequence) - Math.abs(b.index - d.stop_sequence))
-                if (busLoc.length > 1 && busLoc[0].index < busLoc[1].index) return
-                busLocIndex = pattern.path.indexOf(busLoc[0])
-                routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= busLocIndex && pattern.path.indexOf(a) < d.stop_sequence)
-                if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
-                let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
-                let eta = now + timeDif;
-                if(busLoc.length > 1) {
-                    busLocIndex2 = pattern.path.indexOf(busLoc[1])
-                    routeSection = pattern.path.filter(a => pattern.path.indexOf(a) > busLocIndex2 && pattern.path.indexOf(a) < d.stop_sequence)
-                    if (routeSection.length !== 0 || (busLocIndex + 1) === d.stop_sequence) { 
-                        let timeDif1 = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
-                        if(Math.abs(d.scheduled_arrival_unix - (now + timeDif1)) < Math.abs(d.scheduled_arrival_unix - eta)) {
-                            timeDif = timeDif1; 
-                            eta = now + timeDif;
-                            busLocIndex = busLocIndex2
+                let eta;
+                if (vec.stop_sequence) {
+                    busLocIndex = vec.stop_sequence - 1;
+                    routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= (busLocIndex) && pattern.path.indexOf(a) < d.stop_sequence)
+                    let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+                    eta = now + timeDif;
+                } else {
+                    busLoc = pattern.path.filter(a => a.id === vec.stop_id).sort((a, b) => Math.abs(a.index - d.stop_sequence) - Math.abs(b.index - d.stop_sequence))
+                    if (busLoc.length > 1 && busLoc[0].index < busLoc[1].index) return
+                    busLocIndex = pattern.path.indexOf(busLoc[0])
+                    routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= busLocIndex && pattern.path.indexOf(a) < d.stop_sequence)
+                    if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
+                    let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+                    eta = now + timeDif;
+                    if (busLoc.length > 1) {
+                        busLocIndex2 = pattern.path.indexOf(busLoc[1])
+                        routeSection = pattern.path.filter(a => pattern.path.indexOf(a) > busLocIndex2 && pattern.path.indexOf(a) < d.stop_sequence)
+                        if (routeSection.length !== 0 || (busLocIndex + 1) === d.stop_sequence) {
+                            let timeDif1 = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+                            if (Math.abs(d.scheduled_arrival_unix - (now + timeDif1)) < Math.abs(d.scheduled_arrival_unix - eta)) {
+                                timeDif = timeDif1;
+                                eta = now + timeDif;
+                                busLocIndex = busLocIndex2
+                            }
                         }
                     }
                 }
@@ -100,15 +108,15 @@ function fetchBuses() {
                 TEMP FIX
                 */
 
-                if((d.estimated_arrival_unix - d.scheduled_arrival_unix) > 30*60) d.estimated_arrival_unix -= 60*60;
+                if ((d.estimated_arrival_unix - d.scheduled_arrival_unix) > 30 * 60) d.estimated_arrival_unix -= 60 * 60;
 
                 if (!d.estimated_arrival_unix) {
                     d.estimated_arrival_unix = eta
-                    if(d.status && d.estimated_arrival_unix < d.scheduled_arrival_unix) d.estimated_arrival_unix = d.scheduled_arrival_unix
+                    if (d.status && d.estimated_arrival_unix < d.scheduled_arrival_unix) d.estimated_arrival_unix = d.scheduled_arrival_unix
                     d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
-                    d.injected = true;
+                    //d.injected = true;
                 }
-                d.stop_index = busLocIndex+1;
+                d.stop_index = busLocIndex + 1;
                 d.delay = d.estimated_arrival_unix - d.scheduled_arrival_unix;
             }
 
@@ -269,7 +277,7 @@ function loadDiv(div, pattern, id, vec) {
         e.innerHTML = eta + "<span>" + a.name + "</span>"
         let e2 = document.createElement("span")
         e2.className = "lines"
-        if(a.index < vec.stop_index) e2.classList.add("passed")
+        if (a.index < vec.stop_index) e2.classList.add("passed")
         l = a.lines.filter(a => a !== pattern.line_id);
         e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line " + (shortLines.includes(a) ? "short" : "long") + "\">" + a + "</span>").join("")
         if (new Date().getHours() < 5) {
@@ -312,7 +320,7 @@ function loadDiv(div, pattern, id, vec) {
 let shapesCache = {}
 
 async function genMap(div, pattern, vehicle) {
-    var selectedIcon = L.icon( {
+    var selectedIcon = L.icon({
         iconUrl: (shortLines.includes(pattern.line_id) ? "/static/selShort.png" : "/static/selLong.png"),
         iconAnchor: [12, 41],
         popupAnchor: [0, -40]
@@ -324,7 +332,7 @@ async function genMap(div, pattern, vehicle) {
 
     let shape = pattern.shape_id
 
-    var marker = L.marker([parseFloat(stopInfo.lat), parseFloat(stopInfo.lon)], {icon: selectedIcon}).addTo(map)
+    var marker = L.marker([parseFloat(stopInfo.lat), parseFloat(stopInfo.lon)], { icon: selectedIcon }).addTo(map)
 
     marker.openPopup();
 
