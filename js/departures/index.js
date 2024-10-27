@@ -95,6 +95,13 @@ function fetchBuses() {
                     }
                 }
                 if (busLocIndex === 0) d.status = "Início de serviço";
+
+                /*
+                TEMP FIX
+                */
+
+                if((d.estimated_arrival_unix - d.scheduled_arrival_unix) > 30*60) d.estimated_arrival_unix -= 60*60;
+
                 if (!d.estimated_arrival_unix) {
                     d.estimated_arrival_unix = eta
                     if(d.status && d.estimated_arrival_unix < d.scheduled_arrival_unix) d.estimated_arrival_unix = d.scheduled_arrival_unix
