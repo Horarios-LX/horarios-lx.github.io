@@ -79,6 +79,7 @@ function fetchBuses() {
                 if (vec.stop_sequence) {
                     busLocIndex = vec.stop_sequence - 1;
                     routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= (busLocIndex) && pattern.path.indexOf(a) < d.stop_sequence)
+                    if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
                     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
                     eta = now + timeDif;
                 } else {
