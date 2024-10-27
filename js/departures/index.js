@@ -197,6 +197,7 @@ function fetchBuses() {
                     block: 'center',
                     inline: 'nearest'
                 });
+                Promise.resolve(loadDiv(div, pattern, node.id, departure))
             }
             nodeEl.onclick = async () => {
                 if (selectedDiv) selectedDiv.classList.add("hidden");
