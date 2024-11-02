@@ -75,7 +75,7 @@ function fetchBuses() {
             }
 
             // Invalidates time (and recalculates it) if the ETA given by the API is a timestamp in the past.
-            if(d.estimated_arrival_unix < now && !d.observed_arrival_unix) d.estimated_arrival_unix = null;
+            if(d.estimated_arrival_unix < (now - 60) && !d.observed_arrival_unix) d.estimated_arrival_unix = null;
 
             if (vec) {
                 d.lat = vec.lat;
@@ -132,7 +132,7 @@ function fetchBuses() {
             }
             if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
             if (!notesCache[d.vehicle_id] && d.vehicle_id) {
-                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r : { json: () => [] }).then(r => r.json());
+                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r.json() : []).then(r => r.json());
             }
             let arrivalSpan = ""
             let arrivalTime = (d.estimated_arrival || d.scheduled_arrival).split(":").slice(0, 2).join(":")
