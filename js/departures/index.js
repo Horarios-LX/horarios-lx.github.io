@@ -132,7 +132,7 @@ function fetchBuses() {
             }
             if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
             if (!notesCache[d.vehicle_id] && d.vehicle_id) {
-                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r.json() : []).then(r => r.json());
+                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r.json() : []).catch(r => []);
             }
             let arrivalSpan = ""
             let arrivalTime = (d.estimated_arrival || d.scheduled_arrival).split(":").slice(0, 2).join(":")
