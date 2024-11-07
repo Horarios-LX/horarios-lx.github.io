@@ -71,7 +71,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         var marker = L.marker([stop.lat, stop.lon], {
             icon: stopIcon
         })
-        let lines = stop.lines.reduce((acc, value) => acc + "<span class=\"line\" style=\"background-color: " + value.color + ";\">" + value.text + "</span>", "")
+        let lines = stop.lines.reduce((acc, value) => acc + "<span class=\"line\" style=\"background-color: " + value.color + ";\">" + (value.text || value) + "</span>", "")
 
         const popupContent = `
         <div class="stop-popup" style="text-align: center;">
