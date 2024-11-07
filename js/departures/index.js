@@ -299,7 +299,7 @@ function genDiv(pattern, id, vec) {
         e2.className = "lines"
         if (a.index < vec.stop_index) e2.classList.add("passed")
         l = a.lines.filter(a => a.text !== pattern.line_id);
-        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + (a.color) + ";\">" + a.text + "</span>").join("")
+        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + (a.color) + ";\">" + (a || a.text) + "</span>").join("")
         if (new Date().getHours() < 5) {
             e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
         } else {
