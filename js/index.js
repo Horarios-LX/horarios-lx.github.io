@@ -8,17 +8,19 @@ let markersCache = {};
 
 map = L.map("map").setView([38.7033459, -9.1638052], 12);
 
-function postSearch(item) {
-    schedulesButton.classList.remove("disabled")
-    schedulesButton.onclick = () => window.location.href = "/partidas/?p=" + item.id
+function postSearch(item, school) {
+    if(!school) schedulesButton.classList.remove("disabled")
+    if(!school) schedulesButton.onclick = () => window.location.href = "/" + (school ? "escola" : "partidas") + "/?p=" + item.id
     map.setView([item.lat, item.lon], 20)
-    let marker = markersCache[item.id];
+    if(!school) {
+        let marker = markersCache[item.id];
     setTimeout(() => { 
         selMarker = markers.getVisibleParent(marker)
         selMarker.spiderfy(); 
         marker.openPopup()
     }, 500)
     marker.openPopup()
+}
 }
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,7 +34,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 (async () => {
     stops = await fetch(CLOUDFLARED + "stops").then(r => r.json())
-    
+    schools = await fetch(CLOUDFLARED + "schools").then(r => r.json())
+    stops = stops.filter(a => a.lines.length > 0)
     let stopIcon = L.icon({
         iconUrl: "/static/blob.png",
         iconAnchor: [16, 16],
@@ -68,7 +71,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         var marker = L.marker([stop.lat, stop.lon], {
             icon: stopIcon
         })
-        let lines = stop.lines.reduce((acc, value) => acc + "<span class=\"line " + (value.startsWith("1") ? (shortLines.includes(value) ? "short" : "long") : "unknown") + "\">" + value + "</span>", "")
+        let lines = stop.lines.reduce((acc, value) => acc + "<span class=\"line\" style=\"background-color: " + value.color + ";\">" + value.text + "</span>", "")
 
         const popupContent = `
         <div class="stop-popup" style="text-align: center;">

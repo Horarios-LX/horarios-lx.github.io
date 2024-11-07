@@ -14,7 +14,7 @@ if (!stopInfo) stopInfo = fetch("https://api.carrismetropolitana.pt/stops/" + st
 stopInfo.then(stopInfo => {
     document.querySelector('meta[property="og:title"]').setAttribute("content", "HoráriosLX | " + stopInfo.name);
     document.getElementById("title").innerHTML = "<b>" + stopInfo.name + "</b>"
-    document.getElementById("lines").innerHTML = stopInfo.lines.reduce((acc, value) => acc + "<span class=\"line " + (value.startsWith("1") ? (shortLines.includes(value) ? "short" : "long") : "unknown") + "\">" + value + "</span>", "")
+    document.getElementById("lines").innerHTML = stopInfo.lines.reduce((acc, value) => acc + "<span class=\"line\" style=\"background-color: " + (stopInfo.lineCols ? stopInfo.lineCols[value] : "#000000") + ";\">" + value + "</span>", "")
 
     loading.remove()
 
@@ -48,8 +48,9 @@ function fetchBuses() {
         departures.sort((a, b) => (a.estimated_arrival_unix ? a.estimated_arrival_unix : a.scheduled_arrival_unix) - (b.estimated_arrival_unix ? b.estimated_arrival_unix : b.scheduled_arrival_unix))
         let divs = []
         departures = departures.slice(0, 40)
-        vehicles = fetch(CLOUDFLARED + "vehicles").then(r => r.json()).catch(r => fetch(API_BASE + "vehicles").then(r => r.json()))
+        vehicles = fetch(CLOUDFLARED + "vehicles/" + stopId).then(r => r.json()).catch(r => fetch(API_BASE + "vehicles").then(r => r.json()))
         await Promise.all(departures.map(async d => {
+            if(stopInfo.then) stopInfo = await stopInfo;
             if (!patternsCache[d.pattern_id]) {
                 patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
             }
@@ -59,30 +60,27 @@ function fetchBuses() {
             if (!d.vehicle_id && vec) {
                 d.vehicle_id = vec.id
             } else if (!vec) {
-                vec = vehicles.find(a => a.vehicle_id === d.vehicle_id);
+                vec = vehicles.find(a => a.id === d.vehicle_id);
             } 
             if (!vec && d.estimated_arrival_unix) {
                 d.estimated_arrival_unix = null;
                 d.estimated_arrival = null;
             }
-
-            /*
-                TEMP FIX
-            */
-            if ((d.estimated_arrival_unix - d.scheduled_arrival_unix) > 30 * 60 && d.estimated_arrival_unix) {
-                d.estimated_arrival_unix -= (60 * 60);
-                d.estimated_arrival = (new Date(d.estimated_arrival_unix * 1000).toTimeString().split(' ')[0])
-            }
-
             // Invalidates time (and recalculates it) if the ETA given by the API is a timestamp in the past.
-            if(d.estimated_arrival_unix < (now - 60) && !d.observed_arrival_unix) d.estimated_arrival_unix = null;
+            if((d.estimated_arrival_unix && d.estimated_arrival_unix < (now - 60*60)) && !d.observed_arrival_unix && d.vehicle_id) {
+                d.estimated_arrival_unix = null
+                d.estimated_arrival = null
+                console.error("INVALIDATING " + d.vehicle_id)
+            };
+            
+            if(d.line_id === "1998") d.line_id = "CP";
 
             if (vec) {
                 d.lat = vec.lat;
                 d.lon = vec.lon;
                 d.bearing = vec.bearing;
                 d.stopIndex
-                d.current_stop = vec.stop_id;
+                d.current_stop = vec.stopId;
                 pattern = patternsCache[d.pattern_id]
                 if (pattern.then) pattern = await Promise.resolve(pattern);
                 patternsCache[d.pattern_id] = pattern;
@@ -95,26 +93,15 @@ function fetchBuses() {
                     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
                     eta = now + timeDif;
                 } else {
-                    busLoc = pattern.path.filter(a => a.id === vec.stop_id).sort((a, b) => Math.abs(a.index - d.stop_sequence) - Math.abs(b.index - d.stop_sequence))
-                    if (busLoc.length > 1 && busLoc[0].index < busLoc[1].index) return
-                    busLocIndex = pattern.path.indexOf(busLoc[0])
+                    busLocIndex = pattern.path.indexOf(pattern.path.find(a => a.id === vec.stopId))
+                    prevBusLocIndex = pattern.path.indexOf(pattern.path.find(a => a.id === vec.prev_stop))
+                    busLocIndex < prevBusLocIndex ? busLocIndex = prevBusLocIndex + 1 : busLocIndex = busLocIndex;
                     routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= busLocIndex && pattern.path.indexOf(a) < d.stop_sequence)
                     if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
                     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
                     eta = now + timeDif;
-                    if (busLoc.length > 1) {
-                        busLocIndex2 = pattern.path.indexOf(busLoc[1])
-                        routeSection = pattern.path.filter(a => pattern.path.indexOf(a) > busLocIndex2 && pattern.path.indexOf(a) < d.stop_sequence)
-                        if (routeSection.length !== 0 || (busLocIndex + 1) === d.stop_sequence) {
-                            let timeDif1 = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
-                            if (Math.abs(d.scheduled_arrival_unix - (now + timeDif1)) < Math.abs(d.scheduled_arrival_unix - eta)) {
-                                timeDif = timeDif1;
-                                eta = now + timeDif;
-                                busLocIndex = busLocIndex2
-                            }
-                        }
-                    }
                 }
+                
                 if (busLocIndex === 0) d.status = "Início de serviço";
 
                 if (!d.estimated_arrival_unix) {
@@ -132,7 +119,7 @@ function fetchBuses() {
             }
             if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
             if (!notesCache[d.vehicle_id] && d.vehicle_id) {
-                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r.json() : []).catch(r => []);
+                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[0] + "/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r.json() : []).catch(r => []);
             }
             let arrivalSpan = ""
             let arrivalTime = (d.estimated_arrival || d.scheduled_arrival).split(":").slice(0, 2).join(":")
@@ -143,7 +130,7 @@ function fetchBuses() {
                 let dif = d.estimated_arrival_unix - now;
                 mins = Math.floor(dif / 60)
                 if (mins > 59) mins = "59+"
-                if ((d.stop_sequence === d.stop_index || mins < 1) && !d.status) {
+                if ((d.stop_sequence === d.stop_index && mins < 5 || (mins < 2)) && !d.status) {
                     arrivalTime = "A chegar"
                 } else {
                     arrivalTime = ((arrivalDif === 0 || !d.estimated_arrival.includes(":")) ? d.estimated_arrival.split(":").splice(0, 2).join(":") : "<span class=\"oldTime\">" + d.scheduled_arrival.split(":").splice(0, 2).join(":") + "</span>" + " | " + d.estimated_arrival.split(":").splice(0, 2).join(":")) //mins + " min" + (mins === 1 ? "" : "s")
@@ -160,7 +147,7 @@ function fetchBuses() {
             }
             let bus = document.createElement("div")
             bus.className = "bus"
-            bus.innerHTML = "<div class=\"info\"><p class=\"title " + (d.estimated_arrival ? (d.injected ? "injected" : "ontime") : "") + "\"><span class=\"line " + (d.line_id.startsWith("1") ? (shortLines.includes(d.line_id) ? "short" : "long") : "unknown") + "\">" + d.line_id + "</span>" + d.headsign + "</p><p class=\"schedule\">" + arrivalTime + "</p></div>"
+            bus.innerHTML = "<div class=\"info\"><p class=\"title " + (d.estimated_arrival ? (d.injected ? "injected" : "ontime") : "") + "\"><span class=\"line\" style=\"background-color: " + (stopInfo.lineCols ? stopInfo.lineCols[d.lineId || d.line_id] : "#000000") + ";\">" + (d.lineId || d.line_id) + "</span>" + d.headsign + "</p><p class=\"schedule\">" + arrivalTime + "</p></div>"
             if (d.estimated_arrival) {
                 bus.classList.add("running")
                 bus.innerHTML += "<div class=\"details\"><p class=\"type\"><b>Tipo de veículo:</b> " + (d.vehicle_type || getVehicle(d.vehicle_id)) + "</b></p><p class=\"time " + arrivalSpan + "\">" + (d.status ? d.status : (Math.abs(arrivalDif) < 3 ? "No horário previsto" : Math.abs(arrivalDif) + " mins " + (arrivalDif < 0 ? "adiantado" : "atrasado"))) + "</p></div>"
@@ -282,27 +269,27 @@ function genDiv(pattern, id, vec) {
     } else {
         arrivalSpan = "ontime"
     }
-    routeSection = pattern.path.filter(a => (pattern.path.indexOf(a) + 1) >= (vec.stop_index || 0) && pattern.path.indexOf(a) < vec.stop_sequence)
+    routeSection = pattern.path.filter(a => (pattern.path.indexOf(a)) >= (vec.stop_index - 1 || 0) && pattern.path.indexOf(a) < vec.stop_sequence)
     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
     let timeDelay = vec.delay
     let time = (vec.estimated_arrival_unix || vec.scheduled_arrival_unix) - timeDif;
     pattern.path.map(a => {
         let e = document.createElement("span")
         e.className = "stop"
-        if (a.index < vec.stop_index) {
+        if (a.stop_sequence < vec.stop_index) {
             e.classList.add("passed")
         }
-        if (a.index === (vec.stop_sequence)) {
+        if (a.stop_sequence === (vec.stop_sequence)) {
             e.id = "selectedStop"
         }
         if (!timeDelay) {
             time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
             eta = "<span>" + makeTime(time) + "</span><span class=\"split\"> - </span>"
-        } else if (a.index === (vec.stop_index)) {
+        } else if (a.id === (vec.current_stop) && a.stop_sequence === (vec.stop_index - (1-pattern.path[0].stop_sequence))) {
             if (!e.id) e.classList.add("bus-loc");
             time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
-            eta = "<span class=\"" + arrivalSpan + "\">A chegar</span><span class=\"split\"> | </span>"
-            if (a.index === 1) eta = eta.replaceAll("A chegar", "Partida")
+            eta = (time - now < 2*60 ? "<span class=\"" + arrivalSpan + "\">A chegar</span>" : ((Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time - timeDelay) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time) + "</span>")) + "</span><span class=\"split\"> - </span>"
+            if (a.stop_sequence === 1) eta = eta.replaceAll("A chegar", "Partida")
         } else if (eta !== "") {
             time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
             eta = (Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time - timeDelay) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time) + "</span><span class=\"split\"> - </span>"
@@ -311,8 +298,8 @@ function genDiv(pattern, id, vec) {
         let e2 = document.createElement("span")
         e2.className = "lines"
         if (a.index < vec.stop_index) e2.classList.add("passed")
-        l = a.lines.filter(a => a !== pattern.line_id);
-        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line " + (shortLines.includes(a) ? "short" : "long") + "\">" + a + "</span>").join("")
+        l = a.lines.filter(a => a.text !== pattern.line_id);
+        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + (a.color) + ";\">" + a.text + "</span>").join("")
         if (new Date().getHours() < 5) {
             e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
         } else {

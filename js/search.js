@@ -11,6 +11,11 @@ el.addEventListener('input', function() {
 
 let caches = {}
 
+function filter(text) {
+    if(!text) return ""
+    return text.replaceAll("(X)","").replaceAll("(","").replaceAll(")","").replaceAll("Entrada","")
+}
+
 async function genAutocomplete() {
     stops = getStops();
     preSearch()
@@ -20,7 +25,20 @@ async function genAutocomplete() {
     if (query.length > 1) {
         autocoplete.classList.remove("hidden")
         let filteredSuggestions;
-        filteredSuggestions = stops.filter(a => a.name.toLowerCase().startsWith(query.toLowerCase) || a.name.toLowerCase().includes(query.toLowerCase()) || a.id.startsWith(query))
+        filteredSuggestions = stops.filter(a => {
+            sn = filter(a.name.toLowerCase())
+            si = a.id;
+            qw = filter(query.toLowerCase()).split(/\s+/)
+            return qw.every(w => sn.includes(w) || si.startsWith(query))
+        })
+        if(query.toLowerCase().startsWith("escola")) {
+            filteredSuggestions = filteredSuggestions.concat(schools.filter(a => {
+                sn = filter(a.name.toLowerCase())
+                si = a.id;
+                qw = filter(query.toLowerCase()).split(/\s+/)
+                return qw.every(w => sn.includes(w) || si.startsWith(query))
+            }).map(a => ({ ...a, school: true })))
+        }
         filteredSuggestions.sort((a, b) => {
             if(a.name.toLowerCase().startsWith(query.toLowerCase()) && b.name.toLowerCase().startsWith(query.toLowerCase())) return a.name.localeCompare(b.name);
             if(a.name.toLowerCase().startsWith(query.toLowerCase()) && !b.name.toLowerCase().startsWith(query.toLowerCase())) return -1;
@@ -33,13 +51,13 @@ async function genAutocomplete() {
             const suggestionItem = document.createElement('div');
             const lines = document.createElement('div');
             lines.classList.add("lines")
-            lines.innerHTML = item.lines.reduce((acc, value) => acc + "<span class=\"line " + (value.startsWith("1") ? (shortLines.includes(value) ? "short" : "long") : "unknown") + "\">" + value + "</span>", "")
+            lines.innerHTML = (item.lines ? item.lines.reduce((acc, value) => acc + "<span class=\"line\" style=\"background-color: " + value.color + ";\">" + value.text + "</span>", "") : ("<span class=\"loc\">" + (item.loc ? "<b>" + item.loc + "</b>, " + item.mun : item.mun) + "</span>"))
             if(b) suggestionItem.classList.add("a") 
             suggestionItem.textContent = item.name;
             suggestionItem.addEventListener('click', () => {
                 el.value = item.name; 
                 autocomplete.innerHTML = '';
-                postSearch(item)
+                postSearch(item, item.school)
             });
             suggestionItem.appendChild(lines)
             autocomplete.appendChild(suggestionItem);

@@ -18,7 +18,7 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="/static/MarkerCluster.css" />
     <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 </head>
@@ -31,8 +31,6 @@
             <a href="/contactos/">Contactos</a>
             <span class="split">|</span>
             <a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
-            <span class="split">|</span>
-            <a href="/sobre/">Sobre</a>
         </div>
     </header>
     <div class="h-spacer"></div>
@@ -48,7 +46,7 @@
             <section class="div-split">
                 <h2>Pesquisar</h2>
                 <div class="searchContainer" style="position: relative;">
-                    <input id="search" placeholder="Selecione uma paragem" autocomplete="off">
+                    <input id="search" placeholder="Selecione uma paragem/escola" autocomplete="off">
                     <div class="autocomplete hidden" id="autocomplete"></div>
                 </div>
                 <div class="buttonsRow">
@@ -66,7 +64,6 @@
     <footer>
         <a href="/contactos/">Contactos</a>
         <span class="split">|</span><a href="https://github.com/Horarios-LX/horarios-lx.github.io">Repositório</a>
-        <span class="split">|</span><a href="/sobre/">Sobre</a>
     </footer>
     <script src="/js/index.js"></script>
     <script src="/js/search.js"></script>

@@ -1,4 +1,4 @@
-let CLOUDFLARED = "https://cabinets-cost-kitchen-mas.trycloudflare.com/"
+let CLOUDFLARED = "http://localhost:8080/"
 
 const API_BASE = "https://api.carrismetropolitana.pt/";
 

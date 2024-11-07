@@ -275,6 +275,11 @@ input:focus {
     font-size: .5em;
 }
 
+.autocomplete div .lines .loc {
+    font-size: 1.5em !important;
+    font-weight: normal;
+}
+
 .autocomplete div.a {
     background-color: #cfcfcf;
     cursor: pointer;
@@ -825,7 +830,7 @@ section {
 
 .schedule-expandable .route {
     overflow-y: scroll;
-    height: 27em;
+    max-height: 27em;
     width: 100%;
     position: relative;
     display: flex;
@@ -835,7 +840,7 @@ section {
 
 .schedule-expandable .route-map {
     overflow: hidden;
-    height: 32.4em;
+    max-height: 32.4em;
     width: 50%;
     position: relative;
     float: right;
@@ -908,6 +913,7 @@ section {
     scrollbar-width: none;
     white-space: nowrap;
 }
+
 
 .schedule-expandable .route .lines.passed .line {
     background-color: #acacac !important;
