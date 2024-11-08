@@ -276,7 +276,7 @@ function genDiv(pattern, id, vec) {
     pattern.path.map(a => {
         let e = document.createElement("span")
         e.className = "stop"
-        if (a.stop_sequence < vec.stop_index) {
+        if (a.stop_sequence < (vec.stop_index - (1-pattern.path[0].stop_sequence))) {
             e.classList.add("passed")
         }
         if (a.stop_sequence === (vec.stop_sequence)) {
