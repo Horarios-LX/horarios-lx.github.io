@@ -13,7 +13,7 @@ let caches = {}
 
 function filter(text) {
     if(!text) return ""
-    return text.replaceAll("(X)","").replaceAll("(","").replaceAll(")","").replaceAll("Entrada","")
+    return text.replaceAll("av ","avenida ").replaceAll("r ","rua ").replaceAll("(x)","").replaceAll("(","").replaceAll(")","").replaceAll("entrada","").replaceAll("ú","u").replaceAll("á","a").replaceAll("é","e").replaceAll("ó","o").replaceAll("à","a").replaceAll("ã","a")
 }
 
 async function genAutocomplete() {
@@ -22,7 +22,7 @@ async function genAutocomplete() {
     const query = el.value.toLowerCase();
     autocomplete.innerHTML = ''; // Clear previous suggestions
 
-    if (query.length > 1) {
+    if (query.length > 0) {
         autocoplete.classList.remove("hidden")
         let filteredSuggestions;
         filteredSuggestions = stops.filter(a => {
@@ -46,6 +46,7 @@ async function genAutocomplete() {
             return a.name.localeCompare(b.name);
         })
         let b = true;
+        filteredSuggestions = filteredSuggestions.slice(0, 100)
         filteredSuggestions.forEach(item => {
             b = !b
             const suggestionItem = document.createElement('div');
