@@ -1,4 +1,4 @@
-let CLOUDFLARED = "https://tub-start-exercise-rn.trycloudflare.com/"
+let CLOUDFLARED = "https://springer-hz-gasoline-pas.trycloudflare.com/"
 
 const API_BASE = "https://api.carrismetropolitana.pt/";
 
