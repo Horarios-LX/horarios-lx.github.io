@@ -301,9 +301,9 @@ function genDiv(pattern, id, vec) {
         l = a.lines.filter(a => a.text !== pattern.line_id);
         e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + (a.color) + ";\">" + (a.text || a) + "</span>").join("")
         if (new Date().getHours() < 5) {
-            e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
+            e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("28:", "04:").replaceAll("29:", "05:").replaceAll("30:", "06:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
         } else {
-            e.innerHTML = e.innerHTML.replaceAll("24:", "(+1) 00:").replaceAll("25:", "(+1) 01:").replaceAll("26:", "(+1) 02:").replaceAll("27:", "(+1) 03:");
+            e.innerHTML = e.innerHTML.replaceAll("24:", "(+1) 00:").replaceAll("25:", "(+1) 01:").replaceAll("26:", "(+1) 02:").replaceAll("27:", "(+1) 03:").replaceAll("28:", "(+1) 04:").replaceAll("29:", "(+1) 05:").replaceAll("30:", "(+1) 06:");
         }
         route.appendChild(e)
         route.appendChild(e2)
