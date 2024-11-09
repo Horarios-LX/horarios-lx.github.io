@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="/constants.js"></script>
+    <style>
+        body {
+            padding: 0px;
+            margin: 0px;
+            border: 0px;
+        }
+
+        #map {
+            background-color: #efefef;
+            width: 100vw;
+            height: 100vh;
+            margin: 0px;
+            border: 0px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="/static/MarkerCluster.css" />
+    <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+</head>
+
+<body>
+    <div id="map">
+    </div>
+    <script>
+        map = L.map("map", {
+            renderer: L.canvas(),
+        }).setView([38.7033459, -9.1638052], 12);
+
+        markersCache = {}
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            minZoom: 9,
+            attribution: '© OpenStreetMap',
+            useCache: true,
+            saveToCache: true,
+            useOnlyCache: false
+        }).addTo(map);
+
+        let i = 0;
+        fetchVehicles()
+
+        setInterval(() => {
+            fetchVehicles() 
+        }, 3000)
+        function fetchVehicles() {
+            i = 0;
+            fetch(CLOUDFLARED + "vehicles").then(r => r.json()).then(v => v.forEach(vec => {
+                if(!vec.lat) return;
+                if(!markersCache[vec.id]) {
+                        marker = L.circleMarker([vec.lat, vec.lon]).addTo(map)
+                        markersCache[vec.id] = marker;
+                    i++;
+                }
+            })
+            )
+        }
+    </script>
+</body>
+
+</html>
