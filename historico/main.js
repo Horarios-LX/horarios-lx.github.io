@@ -110,7 +110,6 @@ const CustomCanvasLayer = L.Layer.extend({
             ctx.stroke()
             alpha = 1
             ctx.globalAlpha = 1;
-        
             const pos = map.latLngToLayerPoint(routeSection[routeSection.length - 1].slice(0, 2));
             const adjustedPos = pos.subtract(topLeft).add([buffer, buffer]);
             if (
@@ -150,10 +149,9 @@ async function main() {
         if(!tripIndexes.find(a => a.i === trip12h[i][4]) || lastIndex !== trip12h[i][4]) tripIndexes.push({i: trip12h[i][4], a: i});
         lastIndex = trip12h[i][4];
     }
-    console.log(tripIndexes)
-    await Promise.all(tripIndexes.map(async p => {
-        patternCache[p.i] = await fetch(CLOUDFLARED + "patterns/" + p.i).then(r => r.json());
-    }))
+    tripIndexes.map(async p => {
+        if(!patternCache[p.i]) patternCache[p.i] = fetch(CLOUDFLARED + "patterns/" + p.i).then(r => r.json());
+    })
     now = Math.floor(Date.now()/120000)*120
     let slider = timeline.querySelector("#slider");
     start = now - trip12h.length*120;
@@ -162,9 +160,10 @@ async function main() {
     slider.max = trip12h.length;
     slider.value = trip12h.length;
     timeline.querySelector("#current").innerHTML = parseTime(now)
-    timeline.querySelector("#services").innerHTML = tripIndexes.map((a, i) => {
+    timeline.querySelector("#services").innerHTML = (await Promise.all(tripIndexes.map(async (a, i) => {
+        if(patternCache[a.i].then) patternCache[a.i] = await Promise.resolve(patternCache[a.i]);
         return "<div style=\"background-color:" + patternCache[a.i].color + "3f; width:" + Math.round(((tripIndexes[i+1] ? tripIndexes[i+1].a : trip12h.length) - a.a)/trip12h.length*slider.max)/slider.max*100 + "%\"><span class=\"line\" style=\"background-color: " + patternCache[a.i].color + ";\">" + a.i.split("_")[0].replaceAll("1998","CP") + "</span></div>"
-    }).reduce((acc, val) => acc + val, "")
+    }))).reduce((acc, val) => acc + val, "")
 
     let r = tripIndexes.sort((a, b) => b.a - a.a).find(a => a.a <= slider.value)
         routeSection = trip12h.slice(r.a, slider.value)
@@ -172,9 +171,9 @@ async function main() {
         customLayer._redraw()
     slider.addEventListener("input", function () {
         timeline.querySelector("#current").innerHTML = parseTime(start + slider.value*120)
-        let r = tripIndexes.sort((a, b) => b.a - a.a).find(a => a.a <= slider.value)
+        let r = tripIndexes.sort((a, b) => b.a - a.a).find(a => a.a < slider.value)
         routeSection = trip12h.slice(r.a, slider.value)
-        route = {text: r.i, col: routeSection[0][2]}
+        route = {text: r.i, col: (routeSection.length > 0 ? routeSection[0][2] : null)}
         customLayer._redraw()
     });
 }

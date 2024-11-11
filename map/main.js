@@ -293,7 +293,7 @@ function fetchVehicles() {
         stats.querySelector("#Z3").innerHTML = "<b>" + v.filter(a => a.tripId && a.tripId.startsWith("3")).length + "</b> - Zona 3"
         stats.querySelector("#Z4").innerHTML = "<b>" + v.filter(a => a.tripId && a.tripId.startsWith("4")).length + "</b> - Zona 4"
         stats.querySelector("#FS").innerHTML = "<b>" + v.filter(a => !a.tripId).length + "</b> - Fora de serviço"
-        stats.querySelector("#T").innerHTML = "<b>" + v.length + "</b> - Zona 1"
+        stats.querySelector("#T").innerHTML = "<b>" + v.length + "</b> - Total"
         customLayer._redraw()
         vehicles = v;
     })
