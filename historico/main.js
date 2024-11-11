@@ -155,7 +155,7 @@ async function main() {
     now = Math.floor(Date.now()/120000)*120
     let slider = timeline.querySelector("#slider");
     start = now - trip12h.length*120;
-    timeline.querySelector("#start").innerHTML = parseTime(start)
+    timeline.querySelector("#start").innerHTML = parseTime(start + 120)
     timeline.querySelector("#end").innerHTML = parseTime(now)
     slider.max = trip12h.length;
     slider.value = trip12h.length;
