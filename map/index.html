@@ -2,68 +2,53 @@
 <html>
 
 <head>
-    <script src="/constants.js"></script>
-    <style>
-        body {
-            padding: 0px;
-            margin: 0px;
-            border: 0px;
-        }
-
-        #map {
-            background-color: #efefef;
-            width: 100vw;
-            height: 100vh;
-            margin: 0px;
-            border: 0px;
-        }
-    </style>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="/static/MarkerCluster.css" />
-    <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script src="/constants.js"></script>
+  <link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HoráriosLX - Mapa</title>
+  <link rel="icon" href="/static/logo.svg" sizes="256x256">
+  <link href="/style.css" rel="stylesheet">
+  <meta property="og:title" content="HoráriosLX - Mapa" />
+  <meta property="og:description" content="Mapa dos autocarros da CMetropolitana (em tempo real)." /><meta property="og:image" content="https://horarios-lx.github.io/static/logo.png" />
+  <meta property="og:url" content="https://horarios-lx.github.io/" />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#0047AB">
+  <meta property="og:locale" content="pt_PT" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/MarkerCluster.css" />
+  <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 </head>
 
 <body>
-    <div id="map">
+  <div id="map">
+  </div>
+  <div class="addons">
+    <div id="stats">
+      <p class="title">Veículos a circular</p>
+      <p id="Z1"><b>0</b> - Zona 1</p>
+      <p id="Z2"><b>0</b> - Zona 2</p>
+      <p id="Z3"><b>0</b> - Zona 3</p>
+      <p id="Z4"><b>0</b> - Zona 4</p>
+      <p id="FS"><b>0</b> - Fora de serviço</p>
+      <p id="T"><b>0</b> - Total</p>
     </div>
-    <script>
-        map = L.map("map", {
-            renderer: L.canvas(),
-        }).setView([38.7033459, -9.1638052], 12);
-
-        markersCache = {}
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            minZoom: 9,
-            attribution: '© OpenStreetMap',
-            useCache: true,
-            saveToCache: true,
-            useOnlyCache: false
-        }).addTo(map);
-
-        let i = 0;
-        fetchVehicles()
-
-        setInterval(() => {
-            fetchVehicles() 
-        }, 3000)
-        function fetchVehicles() {
-            i = 0;
-            fetch(CLOUDFLARED + "vehicles").then(r => r.json()).then(v => v.forEach(vec => {
-                if(!vec.lat) return;
-                if(!markersCache[vec.id]) {
-                        marker = L.circleMarker([vec.lat, vec.lon]).addTo(map)
-                        markersCache[vec.id] = marker;
-                    i++;
-                }
-            })
-            )
-        }
-    </script>
+  <div id="info">
+    <p id="line">1000</p>
+    <p id="dest">Algés - Bº do ZambujalAlgés - Bº do ZambujalAlgés - Bº do ZambujalAlgés - Bº do Zambujal</p>
+    <p class="stop-header">Próxima paragem:</p>
+    <p id="stop">Algés (Estação) P10</p>
+    <p id="lines"><span>1000</span></p>
+    <p id="vec"># veículo: 41|1000</p>
+    <p id="trip">1000_0_0_ABCDEFG</p>
+    <button id="close">X</button>
+    <button id="view">Histórico de viagens</button>
+  </div>
+</div>
+  <script src="./main.js"></script>
 </body>
 
 </html>

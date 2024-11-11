@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="/constants.js"></script>
+    <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoráriosLX - Histórico de viagens</title>
+    <link rel="icon" href="/static/logo.svg" sizes="256x256">
+    <link href="/style.css" rel="stylesheet">
+    <meta property="og:title" content="HoráriosLX - Histórico de viagens" />
+    <meta property="og:description" content="Viagens e outras informações relativas a este veículo" />
+    <meta property="og:image" content="https://horarios-lx.github.io/static/logo.png" />
+    <meta property="og:url" content="https://horarios-lx.github.io/" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0047AB">
+    <meta property="og:locale" content="pt_PT" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="/static/MarkerCluster.css" />
+    <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+</head>
+
+<body>
+    <div id="map">
+    </div>
+    <div id="timeline">
+        <div id="services"><div style="background-color: #ff00003f; width: 100%;"><span class="line" style="background-color: #FF00FF;">1000</span></div></div>
+        <input type="range" min="0" max="100" value="50" step="1" id="slider">
+        <p class="label"><span id="start">INICIO</span><span id="current">XX:XX</span><span id="end">FIM</span></p>
+    </div>
+    <script src="./main.js"></script>
+</body>
+
+</html>

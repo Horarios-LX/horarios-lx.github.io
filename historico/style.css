@@ -1,0 +1,106 @@
+:root {
+    --white: #FFFFFF;
+    --light-gray: #EFEFEF;
+    --accent: #0047AB;
+    --accent-secondary: #e37500;
+    --highlight: #C72A41;
+    --dark-gray: #333333;
+    --gray: #666666;
+    --darker-gray: #0a0c0f;
+    --black: #000000;
+    --ontime: #3bb33b;
+    --delayed: #b33b3b;
+    --early: #b37b3b;
+    --injected: #c5a436;
+    --scheduled: #7f7f7f;
+}
+
+body {
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+}
+
+#map {
+    background-color: #efefef;
+    width: 100vw;
+    height: 100vh;
+    margin: 0px;
+    border: 0px;
+}
+
+#timeline {
+    position: absolute;
+    width: 100%;
+    background: rgba(255,255,255, 0.8);
+    height: 6em;
+    padding-top: 1em;
+    background: linear-gradient(0deg, rgba(255,255,255,0.8) 80%, rgba(255,255,255,0) 100%);
+    bottom: 0px;
+    z-index: 100000;
+    text-align: center;
+    align-items: center;
+    align-content: center;
+}
+
+#timeline #services {
+    height: 2em;
+    width: calc(100% - 2em);
+    margin-left: 1em;
+    position: relative;
+    display: flex;
+}
+
+#timeline #services div {
+    height: 2em;
+    position: relative;
+    text-align: center;
+    align-content: center;
+}
+
+#timeline #services div line {
+    margin: 0px !important;
+}
+
+#timeline #services div::before {
+    content: " ";
+    background-color: black;
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1em;
+    width: .25em;
+    height: 2.5em;
+}
+
+
+#timeline input {
+    position: relative;
+    accent-color: var(--accent);
+    width: calc(100% - 2em);
+}
+
+#timeline input:focus {
+    outline: none;
+    border: none; 
+    box-shadow: none;
+}
+
+#timeline .label {
+    margin-left: 1em;
+    width: calc(100% - 2em);
+    margin-top: 0px;
+}
+
+#timeline .label #start {
+    float: left;
+}
+
+#timeline .label #end {
+    float: right;
+}
+
+#timeline .label #current {
+    font-size: 1.2em;
+    font-weight: bold;
+}
