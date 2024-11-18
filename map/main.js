@@ -269,16 +269,16 @@ info.querySelector("#view").onclick = () => selMarker ? window.location.href = "
 
 function fetchVehicles() {
     fetch(CLOUDFLARED + "vehicles").then(r => r.json()).then(v => {
-        v = v.filter(a => a.lat && a.timestamp * 1000 > (Date.now() - 15 * 60 * 1000))
+        v = v.filter(a => a.lat /*&& a.timestamp * 1000 > (Date.now() - 15 * 60 * 1000)*/)
         if (selMarker && !v.find(a => a.id === selMarker)) {
             info.style.display = "none";
             selMarker = null;
         }
         customLayer._data = []
         v.forEach(vec => {
-            if (vec.timestamp * 1000 < (Date.now() - 15 * 60 * 1000)) {
+            /*if (vec.timestamp * 1000 < (Date.now() - 15 * 60 * 1000)) {
                 vec.lineId = null;
-            }
+            }*/
             if (!vec.lat) return;
             //if (!vec.lineId || vec.lineId == null) return;
             if (vec.lineId === "1998") {

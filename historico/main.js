@@ -154,15 +154,17 @@ async function main() {
     })
     now = Math.floor(Date.now()/120000)*120
     let slider = timeline.querySelector("#slider");
-    start = now - trip12h.length*120;
+    let len = trip12h[trip12h.length - 1][5] - trip12h[0][5];
+    slider.max = len;
+    console.log(len)
+    start = now - (len*30);
     timeline.querySelector("#start").innerHTML = parseTime(start + 120)
     timeline.querySelector("#end").innerHTML = parseTime(now)
-    slider.max = trip12h.length;
-    slider.value = trip12h.length;
+    slider.value = len;
     timeline.querySelector("#current").innerHTML = parseTime(now)
     timeline.querySelector("#services").innerHTML = (await Promise.all(tripIndexes.map(async (a, i) => {
         if(patternCache[a.i].then) patternCache[a.i] = await Promise.resolve(patternCache[a.i]);
-        return "<div style=\"background-color:" + patternCache[a.i].color + "3f; width:" + Math.round(((tripIndexes[i+1] ? tripIndexes[i+1].a : trip12h.length) - a.a)/trip12h.length*slider.max)/slider.max*100 + "%\"><span class=\"line\" style=\"background-color: " + patternCache[a.i].color + ";\">" + a.i.split("_")[0].replaceAll("1998","CP") + "</span></div>"
+        return "<div style=\"background-color:" + patternCache[a.i].color + "3f; width:" + Math.round(((tripIndexes[i+1] ? tripIndexes[i+1].a : len) - a.a)/len*slider.max)/slider.max*100 + "%\"><span class=\"line\" style=\"background-color: " + patternCache[a.i].color + ";\">" + a.i.split("_")[0].replaceAll("1998","CP") + "</span></div>"
     }))).reduce((acc, val) => acc + val, "")
 
     let r = tripIndexes.sort((a, b) => b.a - a.a).find(a => a.a <= slider.value)
