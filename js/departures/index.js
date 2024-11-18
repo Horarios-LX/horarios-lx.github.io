@@ -56,7 +56,7 @@ function fetchBuses() {
             }
             if (vehicles.then) vehicles = await Promise.resolve(vehicles);
 
-            let vec = vehicles.find(a => a.trip_id === d.trip_id);
+            let vec = vehicles.find(a => a.trip_id === d.trip_id || a.tripId === d.trip_id);
             if (!d.vehicle_id && vec) {
                 d.vehicle_id = vec.id
             } else if (!vec) {
