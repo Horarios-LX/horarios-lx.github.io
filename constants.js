@@ -1,4 +1,4 @@
-let CLOUDFLARED = "https://planned-worm-politics-obviously.trycloudflare.com/"
+let CLOUDFLARED = "https://revealed-docs-obtaining-permitted.trycloudflare.com/"
 
 const API_BASE = "https://api.carrismetropolitana.pt/";
 
