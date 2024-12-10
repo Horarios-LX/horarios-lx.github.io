@@ -9,7 +9,7 @@ soundBtn.onclick = () => audio.play()
 
 let departuresEl = document.getElementById("departures")
 
-if (!stopInfo) stopInfo = fetch("https://api.carrismetropolitana.pt/stops/" + stopId).then(r => r.json())
+if (!stopInfo) stopInfo = fetch(API_BASE + "stops/" + stopId).then(r => r.json())
 
 stopInfo.then(stopInfo => {
     document.querySelector('meta[property="og:title"]').setAttribute("content", "HoráriosLX | " + stopInfo.name);
@@ -40,7 +40,7 @@ let selected = {};
 let now;
 
 function fetchBuses() {
-    fetch(API_BASE + "stops/" + stopId + "/realtime").then(r => r.json()).then(async departures => {
+    fetch(API_BASE + "arrivals/by_stop/" + stopId).then(r => r.json()).then(async departures => {
         vehicles = null;
         now = Date.now() / 1000
         let tempDiv = document.createElement("div")
@@ -50,7 +50,8 @@ function fetchBuses() {
         departures = departures.slice(0, 40)
         vehicles = fetch(CLOUDFLARED + "vehicles/" + stopId).then(r => r.json()).catch(r => fetch(API_BASE + "vehicles").then(r => r.json()))
         await Promise.all(departures.map(async d => {
-            if(stopInfo.then) stopInfo = await stopInfo;
+            if(stopInfo.then) stopInfo = await Promise.resolve(stopInfo);
+            if(vehicleMeta.then) vehicleMeta = await Promise.resolve(vehicleMeta)
             if (!patternsCache[d.pattern_id]) {
                 patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
             }

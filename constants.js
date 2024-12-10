@@ -1,6 +1,6 @@
-let CLOUDFLARED = "https://revealed-docs-obtaining-permitted.trycloudflare.com/"
+let CLOUDFLARED = "https://pst-guitar-influences-compatibility.trycloudflare.com/"
 
-const API_BASE = "https://api.carrismetropolitana.pt/";
+const API_BASE = "https://api.cmet.pt/";
 
 let stops;
 
