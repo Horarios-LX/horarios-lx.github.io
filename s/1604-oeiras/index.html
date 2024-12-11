@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="/constants.js"></script>
+    <script src="./preload.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoráriosLX - Oeiras</title>
+    <link rel="icon" href="/static/logo.svg" sizes="256x256">
+    <link href="/style.css" rel="stylesheet">
+    <meta property="og:title" content="HoráriosLX - Oeiras" />
+    <meta property="og:description" content="Partidas na linha 1604, para a estação de Oeiras." /><meta property="og:image" content="https://horarios-lx.github.io/static/logo.png" />
+    <meta property="og:url" content="https://horarios-lx.github.io/s/1604-oeiras" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0047AB">
+    <meta property="og:locale" content="pt_PT" />
+</head>
+
+<body>
+    <header>
+        <img src="/static/logo1.svg"></img>
+        <h1>HoráriosLX</h1>
+    </header>
+    <div class="h-spacer"></div>
+    <div class="contents">
+        <section class="departures">
+            <h2 id="title-h2">Partidas</h2>
+            <div class="title-container">
+                <p id="title"><b>Oeiras - Cais 8 (Entrada Norte)</b></p>
+            </div>
+            <p id="lines"><span class="line long">1604</span><span class="line unknown">1120</span><span class="line unknown">1523</span><span class="line unknown">1529</span><span class="line unknown">1614</span><span class="line unknown">1615</span></p>
+            <p><button class="primary" style="border-radius: 1em;" id="primary-btn" onclick="full_page_prompt()">Página completa</button></p>
+            <div id="departures" class="departures-loading">
+                <object data="/static/logo.svg" type="image/svg+xml"></object>
+            </div>
+        </section>
+    </div>
+    <div class="h-spacer"></div>
+    <footer>
+        <a href="/contactos/">Contactos</a>
+    </footer>
+    <script src="./main.js"></script>
+</body>
+
+</html>

@@ -549,6 +549,7 @@ section {
     width: 100%;
 }
 
+
 .title-container {
     display: flex;
     align-items: center;
@@ -627,10 +628,11 @@ section {
     padding: .5em;
     margin-top: 1.5em;
     position: relative;
+    margin-bottom: 1.5em;
 }
 
 .departures #departures.departures-loading {
-    min-height: 80vh !important;
+    min-height: calc(80vh - 2em) !important;
 }
 
 .departures #departures::before {
@@ -775,7 +777,7 @@ section {
 
 .departures #departures .bus .schedule {
     float: right;
-    max-width: 30%;
+    max-width: 33%;
     min-width: 3em;
     font-weight: bold;
     font-size: 1.2em;
@@ -797,15 +799,15 @@ section {
     text-decoration-thickness: .125em;
 }
 
-.departures .time.ontime {
+.departures .time.ontime, .departures .schedule.ontime {
     color: var(--ontime);
 }
 
-.departures .time.early {
+.departures .time.early, .departures .schedule.early {
     color: var(--early);
 }
 
-.departures .time.delayed {
+.departures .time.delayed, .departures .schedule.delayed {
     color: var(--delayed);
 }
 
@@ -1033,12 +1035,14 @@ section {
 
 @media (max-width: 450px) {
     body {
+        min-height: 111.11vh !important;
         zoom: 90%;
     }
 }
 
 @media (max-width: 380px) {
     body {
+        min-height: 125vh !important;
         zoom: 80%;
     }
 }
@@ -1127,11 +1131,16 @@ section {
     }
 
     .departures #departures .bus {
-        font-size: .6em;
+        font-size: .7em;
     }
 
     .schedule-expandable .route {
+        font-size: .8em;
         width: 100%;
+    }
+
+    .departures #departures .bus .details {
+        font-size: 1.1em;
     }
 
     .schedule-expandable {
