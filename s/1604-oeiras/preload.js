@@ -34,7 +34,11 @@ const stopInfo = {
 }
 
 let language = navigator.language || navigator.userLanguage;
-if (language !== "pt") language = "en";
+if (!language.includes("pt-")) {
+    language = "en"
+} else {
+    language = "pt"
+};
 
 function full_page_prompt() {
     if (confirm(language === "pt" ? "Está prestes a sair desta página. Clique \"OK\" para ver as partidas completas." : "You're about to leave this webpage. Click \"OK\" to view the full departures list.")) return window.location.href = "/partidas/?p=121270";
