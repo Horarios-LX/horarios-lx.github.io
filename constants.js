@@ -1,4 +1,4 @@
-let CLOUDFLARED = "https://remark-cellular-suspected-dose.trycloudflare.com/"
+let CLOUDFLARED = "https://suffered-listing-drivers-gi.trycloudflare.com/"
 
 const API_BASE = "https://api.cmet.pt/";
 

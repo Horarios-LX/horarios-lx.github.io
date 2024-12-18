@@ -17,12 +17,12 @@ setInterval(() => {
 }, 30 * 1000)
 
 function fetchBuses() {
-    fetch(API_BASE + "arrivals/by_stop/121270").then(r => r.json()).then(async departures => {
+    fetch(API_BASE + "arrivals/by_stop/121270").then(r => r.json()).catch(r => fetch("https://api.carrismetropolitana.pt/stop/121270/realtime").then(r => r.json())).then(async departures => {
         departures = departures.filter(a => a.line_id === "1604")
         vehicles = null;
         now = Date.now() / 1000
         let tempDiv = document.createElement("div")
-        departures = departures.filter(a => (a.estimated_arrival_unix > now || (!a.estimated_arrival_unix && a.scheduled_arrival_unix > (now - 30 * 60))) && !a.observed_arrival_unix)
+        departures = departures.filter(a => (a.estimated_arrival_unix > (now - 60) || (!a.estimated_arrival_unix && a.scheduled_arrival_unix > (now - 30 * 60))) && (!a.observed_arrival_unix || a.observed_arrival_unix < (now - 60)))
         departures.sort((a, b) => (a.estimated_arrival_unix ? a.estimated_arrival_unix : a.scheduled_arrival_unix) - (b.estimated_arrival_unix ? b.estimated_arrival_unix : b.scheduled_arrival_unix))
         let divs = []
         departures = departures.slice(0, 40)
@@ -30,7 +30,7 @@ function fetchBuses() {
         await Promise.all(departures.map(async d => {
             if(stopInfo.then) stopInfo = await Promise.resolve(stopInfo);
             if (!patternsCache[d.pattern_id]) {
-                patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
+                patternsCache[d.pattern_id] = fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json());
             }
             if (vehicles.then) vehicles = await Promise.resolve(vehicles);
 
@@ -50,7 +50,7 @@ function fetchBuses() {
                 d.estimated_arrival = null
                 console.error("INVALIDATING " + d.vehicle_id)
             };
-            
+          
             if(d.line_id === "1998") d.line_id = "CP";
 
             if (vec) {
@@ -67,16 +67,19 @@ function fetchBuses() {
                 if (vec.stop_sequence) {
                     busLocIndex = vec.stop_sequence - 1;
                     routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= (busLocIndex) && pattern.path.indexOf(a) < d.stop_sequence)
-                    if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
+                    //if (routeSection.length === 0) console.log(busLocIndex)
                     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
                     eta = now + timeDif;
                 } else {
-                    busLocIndex = pattern.path.indexOf(pattern.path.find(a => a.id === vec.stopId))
-                    prevBusLocIndex = pattern.path.indexOf(pattern.path.find(a => a.id === vec.prev_stop))
-                    busLocIndex < prevBusLocIndex ? busLocIndex = prevBusLocIndex + 1 : busLocIndex = busLocIndex;
-                    routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= busLocIndex && pattern.path.indexOf(a) < d.stop_sequence)
-                    if (routeSection.length === 0 && (busLocIndex + 1) !== d.stop_sequence) return
+                    busLocIndex = pattern.path.filter(a => a.id === vec.stopId)
+                    b = pattern.path.find(c => c.id === vec.prevStop)
+                    busLocIndex.filter(a => pattern.path.indexOf(a) > pattern.path.indexOf(b))
+                    
+                    busLocIndex = pattern.path.indexOf(busLocIndex[0])
+                    if(busLocIndex > d.stop_sequence) return;
+                    routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= (busLocIndex) && pattern.path.indexOf(a) < d.stop_sequence)
                     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
+               
                     eta = now + timeDif;
                 }
                 
@@ -95,8 +98,8 @@ function fetchBuses() {
             if (!patternsCache[d.pattern_id]) {
                 patternsCache[d.pattern_id] = fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json());
             }
-            if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
-
+            if (d.estimated_arrival_unix < (now - 60) && d.scheduled_arrival_unix < now) return;
+   
             let arrivalSpan = ""
             let arrivalTime = (d.estimated_arrival || d.scheduled_arrival).split(":").slice(0, 2).join(":")
             let arrivalDif;
@@ -258,7 +261,7 @@ function genDiv(pattern, id, vec) {
         if (!timeDelay) {
             time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
             eta = "<span>" + makeTime(time) + "</span><span class=\"split\"> - </span>"
-        } else if (a.id === (vec.current_stop) && a.stop_sequence === (vec.stop_index - (1-pattern.path[0].stop_sequence))) {
+        } else if (a.stop_sequence === (vec.stop_index - (1-pattern.path[0].stop_sequence))) {
             if (!e.id) e.classList.add("bus-loc");
             time += (a.schedule ? a.schedule.travel_time : a.travel_time) * 60
             eta = (time - now < 2*60 ? "<span class=\"" + arrivalSpan + "\">A chegar</span>" : ((Math.abs(arrivalDif) > 2 ? "<span class=\"oldTime\">" + makeTime(time - timeDelay) + "</span><span class=\"split\"> | </span>" : "") + "<span class=\"" + arrivalSpan + "\">" + makeTime(time) + "</span>")) + "</span><span class=\"split\"> - </span>"

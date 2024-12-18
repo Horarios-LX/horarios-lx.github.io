@@ -14,7 +14,16 @@ if (!stopInfo) stopInfo = fetch(API_BASE + "stops/" + stopId).then(r => r.json()
 stopInfo.then(stopInfo => {
     document.querySelector('meta[property="og:title"]').setAttribute("content", "HoráriosLX | " + stopInfo.name);
     document.getElementById("title").innerHTML = "<b>" + stopInfo.name + "</b>"
-    document.getElementById("lines").innerHTML = stopInfo.lines.reduce((acc, value) => acc + "<span class=\"line\" style=\"background-color: " + (stopInfo.lineCols ? stopInfo.lineCols[value] : "#000000") + ";\">" + value + "</span>", "")
+    document.getElementById("lines").innerHTML = "";
+    stopInfo.lines.map(value => {
+        console.log(value)
+        let s = document.createElement("span")
+        s.className = "line"
+        s.style.backgroundColor = (stopInfo.lineCols ? stopInfo.lineCols[value] : "#000000")
+        s.innerHTML = value;
+        //s.onclick = () => alert("PRESSED " + value)
+        document.getElementById("lines").appendChild(s)
+    })
 
     loading.remove()
 
@@ -30,8 +39,6 @@ let mapLibLoaded = false;
 let vehicles;
 
 let patternsCache = {}
-
-let notesCache = {}
 
 let divsCache = {}
 
@@ -119,9 +126,6 @@ function fetchBuses() {
                 patternsCache[d.pattern_id] = fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json());
             }
             if (d.estimated_arrival_unix < now && d.scheduled_arrival_unix < now) return;
-            if (!notesCache[d.vehicle_id] && d.vehicle_id) {
-                notesCache[d.vehicle_id] = fetch(CLOUDFLARED + "notes/" + d.vehicle_id.split("|")[0] + "/" + d.vehicle_id.split("|")[1]).then(r => r.ok ? r.json() : []).catch(r => []);
-            }
             let arrivalSpan = ""
             let arrivalTime = (d.estimated_arrival || d.scheduled_arrival).split(":").slice(0, 2).join(":")
             let arrivalDif;
@@ -152,16 +156,6 @@ function fetchBuses() {
             if (d.estimated_arrival) {
                 bus.classList.add("running")
                 bus.innerHTML += "<div class=\"details\"><p class=\"type\"><b>Tipo de veículo:</b> " + (d.vehicle_type || getVehicle(d.vehicle_id)) + "</b></p><p class=\"time " + arrivalSpan + "\">" + (d.status ? d.status : (Math.abs(arrivalDif) < 3 ? "No horário previsto" : Math.abs(arrivalDif) + " mins " + (arrivalDif < 0 ? "adiantado" : "atrasado"))) + "</p></div>"
-            }
-            if (notesCache[d.vehicle_id] && notesCache[d.vehicle_id].then) notesCache[d.vehicle_id] = await Promise.resolve(notesCache[d.vehicle_id]);
-
-            if (now > (d.timestamp + 5 * 60)) {
-                if (!notesCache[d.vehicle_id]) notesCache[d.vehicle_id] = []
-                let tsDif = Math.floor((now - d.timestamp) / 60);
-                if (!notesCache[d.vehicle_id].find(a => a.includes("Erro:"))) notesCache[d.vehicle_id].push("Erro: este serviço não é atualizado há mais de " + (tsDif > 60 ? (Math.floor(tsDif / 60) + " hora" + (tsDif < 120 ? "" : "s") + ".") : (Math.floor(tsDif) + " mins.")));
-            }
-            if (notesCache[d.vehicle_id] && notesCache[d.vehicle_id].length > 0) {
-                bus.innerHTML += "<div class=\"alerts\">" + notesCache[d.vehicle_id].map(a => "<p>⚠️ " + a + "</p>").join("") + "</div>"
             }
             bus.id = d.trip_id + "&" + d.stop_sequence
             divs.push({ arrival: (d.estimated_arrival_unix || d.scheduled_arrival_unix), div: bus })
@@ -300,7 +294,7 @@ function genDiv(pattern, id, vec) {
         e2.className = "lines"
         if (a.index < vec.stop_index) e2.classList.add("passed")
         l = a.lines.filter(a => a.text !== pattern.line_id);
-        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + (a.color) + ";\">" + (a.text || a) + "</span>").join("")
+        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + a.color + "\">" + (a.text || a) + "</span>").join("")
         if (new Date().getHours() < 5) {
             e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("28:", "04:").replaceAll("29:", "05:").replaceAll("30:", "06:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
         } else {
