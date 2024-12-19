@@ -75,8 +75,13 @@ function fetchBuses() {
                     b = pattern.path.find(c => c.id === vec.prevStop)
                     busLocIndex.filter(a => pattern.path.indexOf(a) > pattern.path.indexOf(b))
                     
-                    busLocIndex = pattern.path.indexOf(busLocIndex[0])
-                    if(busLocIndex > d.stop_sequence) return;
+                    busLocIndex2 = pattern.path.indexOf(busLocIndex[0])
+                    if(busLocIndex > d.stop_sequence) {
+                        if(busLocIndex.length === 1) return console.error("Failed to get Bus Location Index")
+                        busLocIndex2 = pattern.path.indexOf(busLocIndex[1]);
+                        console.warn("INVALID BUS LOC INDEX. RECALCULATING...")
+                    }
+                    busLocIndex = busLocIndex2;
                     routeSection = pattern.path.filter(a => pattern.path.indexOf(a) >= (busLocIndex) && pattern.path.indexOf(a) < d.stop_sequence)
                     let timeDif = routeSection.reduce((a, s) => a + (s.schedule ? s.schedule.travel_time : s.travel_time) * 60, 0)
                
