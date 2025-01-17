@@ -1,4 +1,4 @@
-let CLOUDFLARED = "https://deep-mating-reuters-pages.trycloudflare.com/"
+let CLOUDFLARED = "https://chips-asin-effectiveness-mirrors.trycloudflare.com/"
 
 const API_BASE = "https://api.cmet.pt/";
 
