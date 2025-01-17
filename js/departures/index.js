@@ -16,7 +16,6 @@ stopInfo.then(stopInfo => {
     document.getElementById("title").innerHTML = "<b>" + stopInfo.name + "</b>"
     document.getElementById("lines").innerHTML = "";
     stopInfo.lines.map(value => {
-        console.log(value)
         let s = document.createElement("span")
         s.className = "line"
         s.style.backgroundColor = (stopInfo.lineCols ? stopInfo.lineCols[value] : "#000000")
@@ -59,11 +58,10 @@ function fetchBuses() {
         await Promise.all(departures.map(async d => {
             if(stopInfo.then) stopInfo = await Promise.resolve(stopInfo);
             if(vehicleMeta.then) vehicleMeta = await Promise.resolve(vehicleMeta)
+            if (vehicles.then) vehicles = await Promise.resolve(vehicles);
             if (!patternsCache[d.pattern_id]) {
                 patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
             }
-            if (vehicles.then) vehicles = await Promise.resolve(vehicles);
-
             let vec = vehicles.find(a => a.trip_id === d.trip_id || a.tripId === d.trip_id);
             if (!d.vehicle_id && vec) {
                 d.vehicle_id = vec.id
@@ -81,14 +79,17 @@ function fetchBuses() {
                 console.error("INVALIDATING " + d.vehicle_id)
             };
             
-            if(d.line_id === "1998") d.line_id = "CP";
-
+            if(d.line_id === "1998") d.line_id = "CP"
+            
             if (vec) {
                 d.lat = vec.lat;
                 d.lon = vec.lon;
                 d.bearing = vec.bearing;
                 d.stopIndex
                 d.current_stop = vec.stopId;
+                if (!patternsCache[d.pattern_id]) {
+                    patternsCache[d.pattern_id] = fetch(CLOUDFLARED + "patterns/" + d.pattern_id).then(r => r.json()).then(r => r).catch(e => fetch("/caches/patterns/" + d.pattern_id + ".json").then(r => r.json()));
+                }
                 pattern = patternsCache[d.pattern_id]
                 if (pattern.then) pattern = await Promise.resolve(pattern);
                 patternsCache[d.pattern_id] = pattern;
@@ -294,7 +295,7 @@ function genDiv(pattern, id, vec) {
         e2.className = "lines"
         if (a.index < vec.stop_index) e2.classList.add("passed")
         l = a.lines.filter(a => a.text !== pattern.line_id);
-        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + a.color + "\">" + (a.text || a) + "</span>").join("")
+        e2.innerHTML = l.length === 0 ? "" : l.map(a => "<span class=\"line\" style=\"background-color: " + pattern.lines[a].color + "\">" + (a.text || a) + "</span>").join("")
         if (new Date().getHours() < 5) {
             e.innerHTML = e.innerHTML.replaceAll("24:", "00:").replaceAll("25:", "01:").replaceAll("26:", "02:").replaceAll("27:", "03:").replaceAll("28:", "04:").replaceAll("29:", "05:").replaceAll("30:", "06:").replaceAll("23:", "(-1) 23:").replaceAll("22:", "(-1) 22:").replaceAll("21:", "(-1) 21:").replaceAll("20:", "(-1) 20:");
         } else {
