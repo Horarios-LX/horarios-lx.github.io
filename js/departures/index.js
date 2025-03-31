@@ -163,7 +163,7 @@ function fetchBuses() {
         }))
         divs.filter(a => !a.observed_arrival_unix)
         divs.sort((a, b) => a.arrival - b.arrival)
-        divs = divs.slice(0, 25)
+        //divs = divs.slice(0, 25)
         if (divs.length === 0) {
             departuresEl.classList.remove("departures-loading")
             departuresEl.innerHTML = "<p>Não há serviços previstos nesta paragem.</p>"
